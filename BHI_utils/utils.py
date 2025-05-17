@@ -121,9 +121,7 @@ def evavulate_per_study(mdl, x, y, s, sensitive_attr, adapt=None, **kwargs):
     # Evaluate the model on data from other studies
     if adapt is not None:
         metrics = {}
-        original_weights = mdl.get_weights()
         for study in np.unique(s):
-            mdl.set_weights(original_weights)
             model = adapt(mdl, studies=s, target_study=study, **kwargs)
             metrics[study] = model_evaluation(model, x[s == study], y[s == study], sensitive_attr[s == study])
         return metrics
