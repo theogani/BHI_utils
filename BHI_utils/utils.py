@@ -192,9 +192,7 @@ def adapt_to_target(hyper_model, x_trn, y_trn, target_study, model_path, kseed=N
         seed=kseed
     )
 
-    print(kwargs.keys())
-
-    tuner.search(x_trn, y_trn, epochs=500, seed=kseed, target_study=target_study,
+    tuner.search(x_trn, y_trn, epochs=500, kseed=kseed, target_study=target_study,
                  callbacks=[EarlyStopping(monitor='val_auc',
                                           patience=20,
                                           mode='max',
