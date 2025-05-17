@@ -2,6 +2,7 @@ import keras_tuner as kt
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, Input, BatchNormalization
 import tensorflow as tf
+import numpy as np
 
 class InitialModel(kt.HyperModel):
     def __init__(self, input_dim, **kwargs):
