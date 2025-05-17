@@ -49,7 +49,8 @@ class ErmHyperModel(kt.HyperModel):
 
     def build(self, hp):
         a = hp.Float("alpha", min_value=0.1, max_value=0.9, step=0.1)
-        return self.model.set_weights(self.original_weights)
+        self.model.set_weights(self.original_weights)
+        return self.model
 
     def fit(self, hp, mdl, *args, **kwargs):
         # Combine source study data with 10% of target study data
