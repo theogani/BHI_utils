@@ -122,6 +122,7 @@ def evavulate_per_study(mdl, x, y, s, sensitive_attr, adapt=None, **kwargs):
     if adapt is not None:
         metrics = {}
         for study in np.unique(s):
+            print(s.shape)
             model = adapt(mdl, studies=s, target_study=study, **kwargs)
             metrics[study] = model_evaluation(model, x[s == study], y[s == study], sensitive_attr[s == study])
         return metrics

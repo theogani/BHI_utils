@@ -54,8 +54,6 @@ class ErmHyperModel(kt.HyperModel):
 
     def fit(self, hp, mdl, *args, **kwargs):
         # Combine source study data with 10% of target study data
-        print('target study', kwargs['target_study'])
-        print('studies shape', kwargs['studies'].shape)
         x_target, _, y_target, _ = train_test_split(
             args[0][kwargs['studies'] == kwargs['target_study']],
             args[1][kwargs['studies'] == kwargs['target_study']], test_size=0.8, random_state=kwargs['kseed']
