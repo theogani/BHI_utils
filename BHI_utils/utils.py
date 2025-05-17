@@ -179,3 +179,32 @@ def evaluate_and_plot(model, X_test, y_test, metric='accuracy', num_samples=50):
     plt.legend()
     plt.grid()
     plt.show()
+
+
+def adapt_to_target(hyper_model, x_trn, y_trn, target_study, model_path, kseed=None, **kwargs):
+    tuner = kt.RandomSearch(
+        hyper_model,
+        objective=kt.Objective("val_auc", direction="max"),
+        executions_per_trial=1,
+        max_trials=100,
+        directory=model_path,
+        project_name=target_study,
+        seed=kseed
+    )
+
+    tuner.search(x_trn, y_trn, epochs=500, kseed=kseed, target_study=target_study,
+                 callbacks=[EarlyStopping(monitor='val_auc',
+                                          patience=20,
+                                          mode='max',
+                                          verbose=1,
+                                          restore_best_weights=True)], **kwargs)
+
+    # Path to the best trial's directory
+    best_trial = tuner.oracle.get_best_trials(num_trials=1)[0]
+
+    # Build model with best parameters
+    model = tuner.hypermodel.build(best_trial.hyperparameters)
+
+    # Load weights of best trial
+    model.load_weights(model_path / target_study / f'trial_{best_trial.trial_id}' / 'checkpoint.weights.h5')
+    return model
