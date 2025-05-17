@@ -41,33 +41,33 @@ class InitialModel(kt.HyperModel):
                                tf.keras.metrics.AUC(curve='PR', name='auprc')])
         return model
 
-    class ErmHyperModel(kt.HyperModel):
-        def __init__(self, model, checkpoint_path, **kwargs):
-            self.model = model
-            self.checkpoint_path = checkpoint_path
-            super().__init__(**kwargs)
+class ErmHyperModel(kt.HyperModel):
+    def __init__(self, model, checkpoint_path, **kwargs):
+        self.model = model
+        self.checkpoint_path = checkpoint_path
+        super().__init__(**kwargs)
 
-        def build(self, hp):
-            a = hp.Float("alpha", min_value=0.1, max_value=0.9, step=0.1)
-            return self.model.load_weights(self.checkpoint_path)
+    def build(self, hp):
+        a = hp.Float("alpha", min_value=0.1, max_value=0.9, step=0.1)
+        return self.model.load_weights(self.checkpoint_path)
 
-        def fit(self, hp, mdl, *args, **kwargs):
-            # Combine source study data with 10% of target study data
-            x_target, _, y_target, _ = train_test_split(
-                args[0][kwargs['studies'] == kwargs['target_study']],
-                args[1][kwargs['studies'] == kwargs['target_study']], test_size=0.8, random_state=kwargs['kseed']
-            )
-            x_target, x_target_val, y_target, y_target_val = train_test_split(x_target, y_target, test_size=0.5,
-                                                                              random_state=kwargs['kseed'])
+    def fit(self, hp, mdl, *args, **kwargs):
+        # Combine source study data with 10% of target study data
+        x_target, _, y_target, _ = train_test_split(
+            args[0][kwargs['studies'] == kwargs['target_study']],
+            args[1][kwargs['studies'] == kwargs['target_study']], test_size=0.8, random_state=kwargs['kseed']
+        )
+        x_target, x_target_val, y_target, y_target_val = train_test_split(x_target, y_target, test_size=0.5,
+                                                                          random_state=kwargs['kseed'])
 
-            x_source = args[0][kwargs['studies'] == kwargs['source_study']]
-            y_source = args[1][kwargs['studies'] == kwargs['source_study']]
+        x_source = args[0][kwargs['studies'] == kwargs['source_study']]
+        y_source = args[1][kwargs['studies'] == kwargs['source_study']]
 
-            x_adapt = np.concatenate([x_source, x_target])
-            y_adapt = np.concatenate([y_source, y_target])
+        x_adapt = np.concatenate([x_source, x_target])
+        y_adapt = np.concatenate([y_source, y_target])
 
-            a = hp.get("alpha")
-            kwargs['sample_weight'] = np.concatenate([np.full(len(x_source), 1-a),  # Weight for source samples
-                                                      np.full(len(x_target), a)])  # Weight for target samples
+        a = hp.get("alpha")
+        kwargs['sample_weight'] = np.concatenate([np.full(len(x_source), 1-a),  # Weight for source samples
+                                                  np.full(len(x_target), a)])  # Weight for target samples
 
-            return mdl.fit(x_adapt, y_adapt, **kwargs)
+        return mdl.fit(x_adapt, y_adapt, **kwargs)
