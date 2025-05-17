@@ -42,14 +42,14 @@ class InitialModel(kt.HyperModel):
         return model
 
 class ErmHyperModel(kt.HyperModel):
-    def __init__(self, model, checkpoint_path, **kwargs):
+    def __init__(self, model, **kwargs):
         self.model = model
-        self.checkpoint_path = checkpoint_path
+        self.original_weights = model.get_weights()
         super().__init__(**kwargs)
 
     def build(self, hp):
         a = hp.Float("alpha", min_value=0.1, max_value=0.9, step=0.1)
-        return self.model.load_weights(self.checkpoint_path)
+        return self.model.set_weights(self.original_weights)
 
     def fit(self, hp, mdl, *args, **kwargs):
         # Combine source study data with 10% of target study data
