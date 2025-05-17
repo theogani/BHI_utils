@@ -138,7 +138,7 @@ def monte_carlo_dropout_predictions(model, X, num_samples=50):
     """
     Perform Monte Carlo Dropout predictions.
     """
-    f_model = lambda x: np.stack([model(x, training=True, verbose=0).numpy() for _ in range(num_samples)], axis=0)
+    f_model = lambda x: np.stack([model(x, training=True).numpy() for _ in range(num_samples)], axis=0)
     return f_model(X)
 
 def calculate_uncertainty(predictions, fun=np.var):
