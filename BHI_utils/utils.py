@@ -41,7 +41,7 @@ def fine_tune(X_trn, y_trn, retrain=True, scaler=None, hyper_model=None, project
     return None
 
 def model_evaluation(mdl, x, y, sensitive_attributes=None):
-    y_pred = mdl.predict(x)
+    y_pred = mdl.predict(x, verbose=0)
     y_pred_binary = (y_pred > 0.5).astype(int)
 
     # Standard metrics
@@ -138,7 +138,7 @@ def monte_carlo_dropout_predictions(model, X, num_samples=50):
     """
     Perform Monte Carlo Dropout predictions.
     """
-    f_model = lambda x: np.stack([model(x, training=True).numpy() for _ in range(num_samples)], axis=0)
+    f_model = lambda x: np.stack([model(x, training=True, verbose=0).numpy() for _ in range(num_samples)], axis=0)
     return f_model(X)
 
 def calculate_uncertainty(predictions, fun=np.var):
