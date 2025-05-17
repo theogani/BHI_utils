@@ -52,14 +52,14 @@ class ErmHyperModel(kt.HyperModel):
         self.model.set_weights(self.original_weights)
         return self.model
 
-    def fit(self, hp, mdl, kseed=None, *args, **kwargs):
+    def fit(self, hp, mdl, seed=None, *args, **kwargs):
         # Combine source study data with 10% of target study data
         x_target, _, y_target, _ = train_test_split(
             args[0][kwargs['studies'] == kwargs['target_study']],
-            args[1][kwargs['studies'] == kwargs['target_study']], test_size=0.8, random_state=kseed
+            args[1][kwargs['studies'] == kwargs['target_study']], test_size=0.8, random_state=seed
         )
         x_target, x_target_val, y_target, y_target_val = train_test_split(x_target, y_target, test_size=0.5,
-                                                                          random_state=kseed)
+                                                                          random_state=seed)
 
         x_source = args[0][kwargs['studies'] == kwargs['source_study']]
         y_source = args[1][kwargs['studies'] == kwargs['source_study']]
