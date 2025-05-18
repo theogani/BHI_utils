@@ -42,15 +42,15 @@ class InitialModel(kt.HyperModel):
         return model
 
 class ErmHyperModel(kt.HyperModel):
-    def __init__(self, model, **kwargs):
-        self.model = model
-        self.original_weights = model.get_weights()
+    def __init__(self, model_fn, **kwargs):
+        self.model_fn = model_fn
         super().__init__(**kwargs)
 
     def build(self, hp):
+        # Always create a new, randomly initialized model
+        model = self.model_fn()
         a = hp.Float("alpha", min_value=0.1, max_value=0.9, step=0.1)
-        self.model.set_weights(self.original_weights)
-        return self.model
+        return model
 
     def fit(self, hp, mdl, *args, **kwargs):
         # Combine source study data with 10% of target study data

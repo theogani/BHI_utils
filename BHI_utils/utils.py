@@ -7,7 +7,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
-def fine_tune(X_trn, y_trn, retrain=True, scaler=None, hyper_model=None, project_dir=None, fold=None, kseed=None):
+def fine_tune(X_trn, y_trn, return_model_and_tuner=False, scaler=None, hyper_model=None, project_dir=None, fold=None,
+              kseed=None):
     if scaler:
         X_trn = scaler.fit_transform(X_trn)
 
@@ -28,17 +29,18 @@ def fine_tune(X_trn, y_trn, retrain=True, scaler=None, hyper_model=None, project
                                                                             TensorBoard(log_dir=project_dir / f'fold_{fold}' / 'logs'),
                                                                             LambdaCallback(on_train_end=tf.keras.backend.clear_session)])
 
-    if retrain:
-        # Path to the best trial's directory
-        best_trial = tuner.oracle.get_best_trials(num_trials=1)[0]
+    # Path to the best trial's directory
+    best_trial = tuner.oracle.get_best_trials(num_trials=1)[0]
 
-        # Build model with best parameters
-        model = tuner.hypermodel.build(best_trial.hyperparameters)
+    # Build model with best parameters
+    model = tuner.hypermodel.build(best_trial.hyperparameters)
 
-        # Load weights of best trial
-        model.load_weights(project_dir / f'fold_{fold}' / f'trial_{best_trial.trial_id}' / 'checkpoint.weights.h5')
-        return model
-    return None
+    # Load weights of best trial
+    model.load_weights(project_dir / f'fold_{fold}' / f'trial_{best_trial.trial_id}' / 'checkpoint.weights.h5')
+
+    if return_model_and_tuner:
+        return model, tuner
+    return model
 
 def model_evaluation(mdl, x, y, sensitive_attributes=None):
     y_pred = mdl.predict(x, verbose=0)
