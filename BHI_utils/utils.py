@@ -199,7 +199,8 @@ def adapt_to_target(hyper_model, x_trn, y_trn, target_study, model_path, kseed=N
                                           patience=20,
                                           mode='max',
                                           verbose=1,
-                                          restore_best_weights=True)], **kwargs)
+                                          restore_best_weights=True),
+                            LambdaCallback(on_train_end=tf.keras.backend.clear_session)], **kwargs)
 
     # Path to the best trial's directory
     best_trial = tuner.oracle.get_best_trials(num_trials=1)[0]
