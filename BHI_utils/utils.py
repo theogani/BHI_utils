@@ -184,14 +184,14 @@ def evaluate_and_plot(model, X_test, y_test, metric='accuracy', num_samples=50):
     plt.show()
 
 
-def adapt_to_target(hyper_model, x_trn, y_trn, target_study, model_path, kseed=None, **kwargs):
+def adapt_to_target(hyper_model, x_trn, y_trn, target_study, model_path, kseed=None, suffix='', **kwargs):
     tuner = kt.RandomSearch(
         hyper_model,
         objective=kt.Objective("val_auc", direction="max"),
         executions_per_trial=1,
         max_trials=100,
         directory=model_path,
-        project_name=target_study.replace('/', ''),
+        project_name=target_study.replace('/', '') + suffix,
         seed=kseed
     )
 
