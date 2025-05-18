@@ -190,7 +190,7 @@ def adapt_to_target(hyper_model, x_trn, y_trn, target_study, model_path, kseed=N
         executions_per_trial=1,
         max_trials=100,
         directory=model_path,
-        project_name=target_study,
+        project_name=target_study.replace('/', ''),
         seed=kseed
     )
 
