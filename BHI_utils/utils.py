@@ -209,5 +209,5 @@ def adapt_to_target(hyper_model, x_trn, y_trn, target_study, model_path, kseed=N
     model = tuner.hypermodel.build(best_trial.hyperparameters)
 
     # Load weights of best trial
-    model.load_weights(model_path / target_study / f'trial_{best_trial.trial_id}' / 'checkpoint.weights.h5')
+    model.load_weights(model_path / target_study.replace('/', '') / f'trial_{best_trial.trial_id}' / 'checkpoint.weights.h5')
     return model
