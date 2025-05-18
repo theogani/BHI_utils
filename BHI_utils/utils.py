@@ -5,6 +5,7 @@ from sklearn.metrics import roc_auc_score, precision_score, recall_score, f1_sco
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
 
 
 def fine_tune(X_trn, y_trn, return_model_and_tuner=False, scaler=None, hyper_model=None, project_dir=None, fold=None,
@@ -211,3 +212,37 @@ def adapt_to_target(hyper_model, x_trn, y_trn, target_study, model_path, kseed=N
     # Load weights of best trial
     model.load_weights(model_path / target_study.replace('/', '') / f'trial_{best_trial.trial_id}' / 'checkpoint.weights.h5')
     return model
+
+def MonteCarloSelection(model, x, y, hp, num_samples=50, **kwargs):
+    """
+    Perform Monte Carlo Dropout predictions and select samples based on uncertainty.
+    """
+    kseed = kwargs.get('kseed', 42)
+    np.random.seed(kseed)
+
+    # Get MC Dropout predictions and calculate uncertainty
+    mc_predictions = monte_carlo_dropout_predictions(model, x, num_samples).squeeze(axis=-1)
+    mean_predictions, uncertainty = mc_predictions.mean(axis=0), calculate_uncertainty(mc_predictions)
+
+    # Select top 20% most uncertain for annotation
+    uncertain_idx = np.argsort(uncertainty)[-int(0.2 * len(x)):]
+
+    # Use hyperparameter for pseudo-labeling
+    pseudo_idx = np.argsort(uncertainty)[:int(hp.Float("pseudo %", min_value=0., max_value=0.5, step=0.05) * len(x))]
+
+    # Split uncertain samples for training and validation
+    x_uncertain_train, x_uncertain_val, y_uncertain_train, y_uncertain_val = train_test_split(
+        x[uncertain_idx],
+        y[uncertain_idx],
+        test_size=0.5, random_state=kseed)
+
+    return (
+        x_uncertain_train,
+        x_uncertain_val,
+        x[pseudo_idx],
+        np.empty((0, *x.shape[1:]), dtype=x.dtype),
+        y_uncertain_train,
+        y_uncertain_val,
+        (mean_predictions[pseudo_idx] > 0.5).astype(int),
+        np.empty((0, *y.shape[1:]), dtype=y.dtype)
+    )

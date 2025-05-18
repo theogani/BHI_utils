@@ -49,7 +49,6 @@ class ErmHyperModel(kt.HyperModel):
     def build(self, hp):
         # Always create a new, randomly initialized model
         model = self.model_fn()
-        a = hp.Float("alpha", min_value=0.1, max_value=0.9, step=0.1)
         return model
 
     def fit(self, hp, mdl, *args, **kwargs):
@@ -67,9 +66,48 @@ class ErmHyperModel(kt.HyperModel):
         x_adapt = np.concatenate([x_source, x_target])
         y_adapt = np.concatenate([y_source, y_target])
 
-        a = hp.get("alpha")
+        a = hp.Float("alpha", min_value=0.1, max_value=0.9, step=0.1)
         kwargs['sample_weight'] = np.concatenate([np.full(len(x_source), 1-a),  # Weight for source samples
                                                   np.full(len(x_target), a)])  # Weight for target samples
 
         del kwargs['kseed'], kwargs['studies'], kwargs['source_study'], kwargs['target_study']
         return mdl.fit(x_adapt, y_adapt, validation_data=(x_target_val, y_target_val), **kwargs)
+
+class ActiveLearningHyperModel(kt.HyperModel):
+    def __init__(self, model_fn, select_fn, **kwargs):
+        self.model_fn = model_fn
+        self.select = select_fn
+        super().__init__(**kwargs)
+
+    def build(self, hp):
+        # Always create a new, randomly initialized model
+        model = self.model_fn()
+        return model
+
+    def fit(self, hp, mdl, *args, **kwargs):
+        # Rank the informativeness of samples in the target study based on Monte Carlo Dropout.
+        # Select the 20% most uncertain samples to annotate.
+        # Use a hyperparameter threshold to distinguish certain and uncertain samples.
+        # Use certain samples with pseudo-labels for training.
+
+        X, y = args[0], args[1]
+        studies, target_study = kwargs['studies'], kwargs['target_study']
+        kseed = kwargs.get('kseed', 42)
+        np.random.seed(kseed)
+
+        # Split target study data
+        x_target, y_target = X[studies == target_study], y[studies == target_study]
+
+        x_selected_train, x_selected_val, x_pseudo_train, x_pseudo_val, y_selected_train, y_selected_val, y_pseudo_train, y_pseudo_val = self.select(model=mdl, x=x_target, y=y_target, hp=hp)
+
+        # Prepare training data
+        x_train = np.concatenate([x_selected_train, x_pseudo_train])
+        y_train = np.concatenate([y_selected_train, y_pseudo_train])
+
+        x_val = np.concatenate([x_selected_val, x_pseudo_val])
+        y_val = np.concatenate([y_selected_val, y_pseudo_val])
+
+        # Remove used kwargs
+        del kwargs['kseed'], kwargs['studies'], kwargs['target_study']
+
+        return mdl.fit(x_train, y_train, validation_data=(x_val, y_val), **kwargs)
