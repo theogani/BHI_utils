@@ -72,4 +72,4 @@ class ErmHyperModel(kt.HyperModel):
                                                   np.full(len(x_target), a)])  # Weight for target samples
 
         del kwargs['kseed'], kwargs['studies'], kwargs['source_study'], kwargs['target_study']
-        return mdl.fit(x_adapt, y_adapt, **kwargs)
+        return mdl.fit(x_adapt, y_adapt, validation_data=(x_target_val, y_target_val), **kwargs)
