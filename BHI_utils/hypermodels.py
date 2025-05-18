@@ -70,5 +70,6 @@ class ErmHyperModel(kt.HyperModel):
         a = hp.get("alpha")
         kwargs['sample_weight'] = np.concatenate([np.full(len(x_source), 1-a),  # Weight for source samples
                                                   np.full(len(x_target), a)])  # Weight for target samples
+        print(x_adapt.dtype, y_adapt.dtype, kwargs['sample_weight'].dtype)
         del kwargs['kseed'], kwargs['studies'], kwargs['source_study'], kwargs['target_study']
-        return mdl.fit(x_adapt, y_adapt, **kwargs)
+        return mdl.fit(x_adapt, y_adapt, **kwargs)#.astype('float32')
