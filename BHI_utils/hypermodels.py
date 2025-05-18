@@ -108,6 +108,6 @@ class ActiveLearningHyperModel(kt.HyperModel):
         y_val = np.concatenate([y_selected_val, y_pseudo_val])
 
         # Remove used kwargs
-        del kwargs['kseed'], kwargs['studies'], kwargs['target_study']
+        del kwargs['kseed'], kwargs['studies'], kwargs['source_study'], kwargs['target_study']
 
         return mdl.fit(x_train, y_train, validation_data=(x_val, y_val), **kwargs)
