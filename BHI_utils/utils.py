@@ -8,6 +8,20 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
 
+def get_best_trial(tuner):
+    # Get all completed trials
+    all_trials = [t for t in tuner.oracle.trials.values() if t.status == 'COMPLETED']
+
+    # Find the best score
+    best_score = np.max([t.score for t in all_trials])
+
+    # Filter trials with the best score
+    best_trials = [t for t in all_trials if t.score == best_score]
+
+    # Pick a deterministic one (e.g., by trial_id)
+    return sorted(best_trials, key=lambda t: t.trial_id)[0]
+
+
 def fine_tune(X_trn, y_trn, return_model_and_tuner=False, scaler=None, hyper_model=None, project_dir=None, fold=None,
               kseed=None):
     if scaler:
@@ -31,7 +45,7 @@ def fine_tune(X_trn, y_trn, return_model_and_tuner=False, scaler=None, hyper_mod
                                                                             LambdaCallback(on_train_end=tf.keras.backend.clear_session)])
 
     # Path to the best trial's directory
-    best_trial = tuner.oracle.get_best_trials(num_trials=1)[0]
+    best_trial = get_best_trial(tuner)
 
     # Build model with best parameters
     model = tuner.hypermodel.build(best_trial.hyperparameters)
@@ -204,7 +218,7 @@ def adapt_to_target(hyper_model, x_trn, y_trn, target_study, model_path, kseed=N
                             LambdaCallback(on_train_end=tf.keras.backend.clear_session)], **kwargs)
 
     # Path to the best trial's directory
-    best_trial = tuner.oracle.get_best_trials(num_trials=1)[0]
+    best_trial = get_best_trial(tuner)
 
     # Build model with best parameters
     model = tuner.hypermodel.build(best_trial.hyperparameters)
