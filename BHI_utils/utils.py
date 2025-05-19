@@ -22,6 +22,21 @@ def get_best_trial(tuner):
     return sorted(best_trials, key=lambda t: t.trial_id)[0]
 
 
+def load(tuner, model_path=None):
+    def fun():
+        # Path to the best trial's directory
+        best_trial = get_best_trial(tuner)
+
+        # Build model with best parameters
+        model = tuner.hypermodel.build(best_trial.hyperparameters)
+
+        if model_path is not None:
+            # Load weights of best trial
+            model.load_weights(model_path / f'trial_{best_trial.trial_id}' / 'checkpoint.weights.h5')
+        return model
+    return fun
+
+
 def fine_tune(X_trn, y_trn, return_model_and_tuner=False, scaler=None, hyper_model=None, project_dir=None, fold=None,
               kseed=None):
     if scaler:
