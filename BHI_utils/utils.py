@@ -164,7 +164,14 @@ def evavulate_per_study(mdl, x, y, s, sensitive_attr, source_study=None, adapt=N
 
 def plot_colored_matrix(df, cmap="plasma", **kwargs):
     plt.figure(figsize=(24, 8))
-    sns.heatmap(df, annot=True, fmt=".3f", cmap=cmap, cbar=True, center=0, **kwargs)
+    if df.values.min()<0:
+        cmap = sns.diverging_palette(240, 10, as_cmap=True)
+        if 'vmin' not in kwargs:
+            kwargs['vmin'] = -np.abs(df.values).max()
+        if 'vmax' not in kwargs:
+            kwargs['vmax'] = np.abs(df.values).max()
+        sns.heatmap(df, annot=True, fmt=".3f", cmap=cmap, cbar=True, **kwargs)
+    sns.heatmap(df, annot=True, fmt=".3f", cmap=cmap, cbar=True, **kwargs)
 
 def monte_carlo_dropout_predictions(model, X, num_samples=50):
     """
