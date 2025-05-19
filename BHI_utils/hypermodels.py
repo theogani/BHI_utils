@@ -102,14 +102,15 @@ class ActiveLearningHyperModel(kt.HyperModel):
 
         # Prepare training data
         x_train = np.concatenate([x_selected_train, x_pseudo_train])
-        weights = np.concatenate([np.full(len(x_selected_train), 1),
-                                  np.full(len(x_pseudo_train), hp.Float("pseudo_weight", min_value=0.1, max_value=0.9, step=0.2))])
+        if 'pseudo_weights' in kwargs:
+            weights = np.concatenate([np.full(len(x_selected_train), 1),
+                                      np.full(len(x_pseudo_train), hp.Float("pseudo_weight", min_value=0.1, max_value=0.9, step=0.2))])
         y_train = np.concatenate([y_selected_train, y_pseudo_train])
 
         x_val = np.concatenate([x_selected_val, x_pseudo_val])
         y_val = np.concatenate([y_selected_val, y_pseudo_val])
 
         # Remove used kwargs
-        del kwargs['kseed'], kwargs['studies'], kwargs['source_study'], kwargs['target_study']
+        del kwargs['kseed'], kwargs['studies'], kwargs['source_study'], kwargs['target_study'], kwargs['pseudo_weights']
 
         return mdl.fit(x_train, y_train, sample_weight=weights, validation_data=(x_val, y_val), **kwargs)
