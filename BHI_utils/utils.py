@@ -167,10 +167,9 @@ def plot_colored_matrix(df, cmap="plasma", **kwargs):
     if np.nanmin(df.values)<0:
         cmap = sns.diverging_palette(10, 240, as_cmap=True)
         if 'vmin' not in kwargs:
-            print('vmin not in kwargs')
-            kwargs['vmin'] = -np.abs(df.values).max()
+            kwargs['vmin'] = -np.nanmax(np.abs(df.values))
         if 'vmax' not in kwargs:
-            kwargs['vmax'] = np.abs(df.values).max()
+            kwargs['vmax'] = np.nanmax(np.abs(df.values))
         return sns.heatmap(df, annot=True, fmt=".3f", cmap=cmap, cbar=True, **kwargs)
     return sns.heatmap(df, annot=True, fmt=".3f", cmap=cmap, cbar=True, **kwargs)
 
