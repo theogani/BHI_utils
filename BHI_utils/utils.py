@@ -165,7 +165,7 @@ def evavulate_per_study(mdl, x, y, s, sensitive_attr, source_study=None, adapt=N
 def plot_colored_matrix(df, cmap="plasma", **kwargs):
     plt.figure(figsize=(24, 8))
     if df.values.min()<0:
-        cmap = sns.diverging_palette(240, 10, as_cmap=True)
+        cmap = 'PiYG'
         if 'vmin' not in kwargs:
             kwargs['vmin'] = -np.abs(df.values).max()
         if 'vmax' not in kwargs:
