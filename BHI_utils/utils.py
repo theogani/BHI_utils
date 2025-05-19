@@ -6,7 +6,6 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
-from BHI_utils.hypermodels import ActiveLearningHyperModel
 
 
 def get_best_trial(tuner):
@@ -298,7 +297,7 @@ def MonteCarloSelection(model, x, y, hp, num_samples=50, uncertainty_metric='var
         np.empty((0, *y.shape[1:]), dtype=y.dtype)
     )
 
-def fine_tune_mc_dropout(hyper_model, x_source, y_source, model_path, kseed=None):
+def fine_tune_mc_dropout(hyper_model, x_source, y_source, model_path, next_hyper_model, kseed=None, **kwargs):
     """
     Fine-tune the model using Monte Carlo Dropout.
     """
@@ -315,4 +314,5 @@ def fine_tune_mc_dropout(hyper_model, x_source, y_source, model_path, kseed=None
         seed=kseed
     )
     tuner.search(x_source, y_source)
-    return ActiveLearningHyperModel(hyper_model.model_fn, lambda model, x, y, hp: MonteCarloSelection(model, x, y, hp, **get_best_trial(tuner).hyperparameters.values))
+
+    return next_hyper_model(hyper_model.model_fn, lambda model, x, y, hp: MonteCarloSelection(model, x, y, hp, **get_best_trial(tuner).hyperparameters.values))
