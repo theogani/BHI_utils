@@ -167,6 +167,7 @@ def plot_colored_matrix(df, cmap="plasma", **kwargs):
     if df.values.min()<0:
         cmap = sns.diverging_palette(240, 10, as_cmap=True)
         if 'vmin' not in kwargs:
+            print('vmin not in kwargs')
             kwargs['vmin'] = -np.abs(df.values).max()
         if 'vmax' not in kwargs:
             kwargs['vmax'] = np.abs(df.values).max()
