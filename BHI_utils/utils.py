@@ -162,9 +162,9 @@ def evavulate_per_study(mdl, x, y, s, sensitive_attr, source_study=None, adapt=N
     else:
         return {study: model_evaluation(mdl, x[s == study], y[s == study], sensitive_attr[s == study]) for study in np.unique(s)}
 
-def plot_colored_matrix(df):
+def plot_colored_matrix(df, cmap="plasma", **kwargs):
     plt.figure(figsize=(24, 8))
-    sns.heatmap(df, annot=True, fmt=".3f", cmap="plasma", cbar=True)
+    sns.heatmap(df, annot=True, fmt=".3f", cmap=cmap, cbar=True, **kwargs)
 
 def monte_carlo_dropout_predictions(model, X, num_samples=50):
     """
