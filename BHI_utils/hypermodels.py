@@ -4,6 +4,9 @@ from tensorflow.keras.layers import Dense, Dropout, Input, BatchNormalization
 import tensorflow as tf
 import numpy as np
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import roc_auc_score
+from BHI_utils.utils import monte_carlo_dropout_predictions, calculate_uncertainty
+
 
 class InitialModel(kt.HyperModel):
     def __init__(self, input_dim, **kwargs):
@@ -115,3 +118,29 @@ class ActiveLearningHyperModel(kt.HyperModel):
         del kwargs['kseed'], kwargs['studies'], kwargs['source_study'], kwargs['target_study']
 
         return mdl.fit(x_train, y_train, validation_data=(x_val, y_val), **kwargs)
+
+class MCDropoutUncertaintyHyperModel(kt.HyperModel):
+    def __init__(self, model_fn, **kwargs):
+        self.model_fn = model_fn
+        super().__init__(**kwargs)
+
+    def build(self, hp):
+        # Build and load a trained model (or train here if needed)
+        return self.model_fn()
+
+    def fit(self, hp, model, *args, **kwargs):
+        num_samples = hp.Int('num_samples', 10, 100, step=10)
+        metric_name = hp.Choice('uncertainty_metric', ['var', 'std', 'entropy'])
+
+        # MC Dropout predictions
+        mc_preds = monte_carlo_dropout_predictions(model, args[0], num_samples=num_samples)
+        uncertainty = calculate_uncertainty(mc_preds, metric_name)
+
+        y_pred = (mc_preds.mean(axis=0) > 0.5).astype(int)
+        incorrect = (y_pred != args[1].flatten()).astype(int) # 1 for incorrect, 0 for correct
+        auc = roc_auc_score(incorrect, uncertainty)
+
+        # Set the trial score
+        model.history = type('', (), {})()  # Dummy history
+        model.history.history = {'auc': [auc]}
+        return model

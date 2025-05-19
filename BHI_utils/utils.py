@@ -6,6 +6,7 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
+from BHI_utils.hypermodels import ActiveLearningHyperModel
 
 
 def get_best_trial(tuner):
@@ -22,7 +23,7 @@ def get_best_trial(tuner):
     return sorted(best_trials, key=lambda t: t.trial_id)[0]
 
 
-def load(tuner, model_path=None):
+def load_best_model(tuner, model_path=None):
     def fun():
         # Path to the best trial's directory
         best_trial = get_best_trial(tuner)
@@ -177,23 +178,30 @@ def monte_carlo_dropout_predictions(model, X, num_samples=50):
     """
     Perform Monte Carlo Dropout predictions.
     """
-    f_model = lambda x: np.stack([model(x, training=True).numpy() for _ in range(num_samples)], axis=0)
-    return f_model(X)
+    return np.stack([model(X, training=True).numpy().squeeze() for _ in range(num_samples)], axis=0)
 
-def calculate_uncertainty(predictions, fun=np.var):
+def calculate_uncertainty(predictions, metric_name):
     """
     Calculate uncertainty as the variance of predictions.
     """
-    return fun(predictions, axis=0)
+    if metric_name == 'var':
+        return np.var(predictions, axis=0)
+    elif metric_name == 'std':
+        return np.std(predictions, axis=0)
+    elif metric_name == 'entropy':
+        mean_preds = predictions.mean(axis=0)
+        return -mean_preds * np.log(mean_preds + 1e-8) - (1 - mean_preds) * np.log(1 - mean_preds + 1e-8)
+    else:
+        raise ValueError("Invalid uncertainty metric")
 
 def evaluate_and_plot(model, X_test, y_test, metric='accuracy', num_samples=50):
     """
     Apply MC Dropout, calculate metric sorted by uncertainty, and plot.
     """
     # Get MC Dropout predictions
-    mc_predictions = monte_carlo_dropout_predictions(model, X_test, num_samples).squeeze(axis=-1)
+    mc_predictions = monte_carlo_dropout_predictions(model, X_test, num_samples)
     mean_predictions = mc_predictions.mean(axis=0)
-    uncertainty = calculate_uncertainty(mc_predictions)
+    uncertainty = calculate_uncertainty(mc_predictions, 'var')
 
     # Sort by uncertainty
     sorted_indices = np.argsort(uncertainty)
@@ -220,7 +228,14 @@ def evaluate_and_plot(model, X_test, y_test, metric='accuracy', num_samples=50):
     plt.show()
 
 
-def adapt_to_target(hyper_model, x_trn, y_trn, target_study, model_path, kseed=None, suffix='', **kwargs):
+def adapt_to_target(hyper_model, x_trn, y_trn, target_study, model_path, kseed=None, suffix='',
+                    fine_tune_on_source=None, **kwargs):
+    if fine_tune_on_source:
+        # Get the source study data
+        x_source, y_source = x_trn[kwargs['studies'] == kwargs['source_study']], y_trn[kwargs['studies'] == kwargs['source_study']]
+
+        hyper_model = fine_tune_on_source(hyper_model, x_source, y_source)
+
     tuner = kt.RandomSearch(
         hyper_model,
         objective=kt.Objective("val_auc", direction="max"),
@@ -249,7 +264,7 @@ def adapt_to_target(hyper_model, x_trn, y_trn, target_study, model_path, kseed=N
     model.load_weights(model_path / (target_study.replace('/', '') + suffix) / f'trial_{best_trial.trial_id}' / 'checkpoint.weights.h5')
     return model
 
-def MonteCarloSelection(model, x, y, hp, num_samples=50, **kwargs):
+def MonteCarloSelection(model, x, y, hp, num_samples=50, uncertainty_metric='var', **kwargs):
     """
     Perform Monte Carlo Dropout predictions and select samples based on uncertainty.
     """
@@ -257,8 +272,8 @@ def MonteCarloSelection(model, x, y, hp, num_samples=50, **kwargs):
     np.random.seed(kseed)
 
     # Get MC Dropout predictions and calculate uncertainty
-    mc_predictions = monte_carlo_dropout_predictions(model, x, num_samples).squeeze(axis=-1)
-    mean_predictions, uncertainty = mc_predictions.mean(axis=0), calculate_uncertainty(mc_predictions)
+    mc_predictions = monte_carlo_dropout_predictions(model, x, num_samples)
+    mean_predictions, uncertainty = mc_predictions.mean(axis=0), calculate_uncertainty(mc_predictions, uncertainty_metric)
 
     # Select top 20% most uncertain for annotation
     uncertain_idx = np.argsort(uncertainty)[-int(0.2 * len(x)):]
@@ -282,3 +297,22 @@ def MonteCarloSelection(model, x, y, hp, num_samples=50, **kwargs):
         (mean_predictions[pseudo_idx] > 0.5).astype(int),
         np.empty((0, *y.shape[1:]), dtype=y.dtype)
     )
+
+def fine_tune_mc_dropout(hyper_model, x_source, y_source, model_path, kseed=None):
+    """
+    Fine-tune the model using Monte Carlo Dropout.
+    """
+    if kseed is not None:
+        np.random.seed(kseed)
+
+    # Define the hypermodel
+    tuner = kt.RandomSearch(
+        hyper_model,
+        objective=kt.Objective("auc", direction="max"),
+        max_trials=100,
+        directory=model_path,
+        project_name="mc_dropout_fine_tune",
+        seed=kseed
+    )
+    tuner.search(x_source, y_source)
+    return ActiveLearningHyperModel(hyper_model.model_fn, lambda model, x, y, hp: MonteCarloSelection(model, x, y, hp, **get_best_trial(tuner).hyperparameters.values))
