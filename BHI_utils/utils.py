@@ -234,6 +234,7 @@ def adapt_to_target(hyper_model, x_trn, y_trn, target_study, model_path, kseed=N
         x_source, y_source = x_trn[kwargs['studies'] == kwargs['source_study']], y_trn[kwargs['studies'] == kwargs['source_study']]
 
         hyper_model = fine_tune_on_source(hyper_model, x_source, y_source, model_path, **kwargs)
+        del kwargs['next_hyper_model']
 
     tuner = kt.RandomSearch(
         hyper_model,
@@ -297,7 +298,7 @@ def MonteCarloSelection(model, x, y, hp, num_samples=50, uncertainty_metric='var
         np.empty((0, *y.shape[1:]), dtype=y.dtype)
     )
 
-def fine_tune_mc_dropout(hyper_model, x_source, y_source, model_path, kseed=None, **kwargs):
+def fine_tune_mc_dropout(hyper_model, x_source, y_source, model_path, next_hyper_model, kseed=None, **kwargs):
     """
     Fine-tune the model using Monte Carlo Dropout.
     """
@@ -314,6 +315,4 @@ def fine_tune_mc_dropout(hyper_model, x_source, y_source, model_path, kseed=None
         seed=kseed
     )
     tuner.search(x_source, y_source)
-    next_hyper_model = kwargs.pop('next_hyper_model')
-    del kwargs['next_hyper_model']
     return next_hyper_model(hyper_model.model_fn, lambda model, x, y, hp: MonteCarloSelection(model, x, y, hp, **get_best_trial(tuner).hyperparameters.values))
