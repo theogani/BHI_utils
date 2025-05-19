@@ -233,7 +233,7 @@ def adapt_to_target(hyper_model, x_trn, y_trn, target_study, model_path, kseed=N
         # Get the source study data
         x_source, y_source = x_trn[kwargs['studies'] == kwargs['source_study']], y_trn[kwargs['studies'] == kwargs['source_study']]
 
-        hyper_model = fine_tune_on_source(hyper_model, x_source, y_source)
+        hyper_model = fine_tune_on_source(hyper_model, x_source, y_source, model_path, **kwargs)
 
     tuner = kt.RandomSearch(
         hyper_model,
