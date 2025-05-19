@@ -297,7 +297,7 @@ def MonteCarloSelection(model, x, y, hp, num_samples=50, uncertainty_metric='var
         np.empty((0, *y.shape[1:]), dtype=y.dtype)
     )
 
-def fine_tune_mc_dropout(hyper_model, x_source, y_source, model_path, next_hyper_model, kseed=None, **kwargs):
+def fine_tune_mc_dropout(hyper_model, x_source, y_source, model_path, kseed=None, **kwargs):
     """
     Fine-tune the model using Monte Carlo Dropout.
     """
@@ -314,5 +314,4 @@ def fine_tune_mc_dropout(hyper_model, x_source, y_source, model_path, next_hyper
         seed=kseed
     )
     tuner.search(x_source, y_source)
-
-    return next_hyper_model(hyper_model.model_fn, lambda model, x, y, hp: MonteCarloSelection(model, x, y, hp, **get_best_trial(tuner).hyperparameters.values))
+    return kwargs.pop('next_hyper_model')(hyper_model.model_fn, lambda model, x, y, hp: MonteCarloSelection(model, x, y, hp, **get_best_trial(tuner).hyperparameters.values))
