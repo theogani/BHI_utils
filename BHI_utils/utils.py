@@ -316,4 +316,4 @@ def fine_tune_mc_dropout(hyper_model, x_source, y_source, model_path, kseed=None
     tuner.search(x_source, y_source)
     next_hyper_model = kwargs.pop('next_hyper_model')
     del kwargs['next_hyper_model']
-    return (hyper_model.model_fn, lambda model, x, y, hp: MonteCarloSelection(model, x, y, hp, **get_best_trial(tuner).hyperparameters.values))
+    return next_hyper_model(hyper_model.model_fn, lambda model, x, y, hp: MonteCarloSelection(model, x, y, hp, **get_best_trial(tuner).hyperparameters.values))
