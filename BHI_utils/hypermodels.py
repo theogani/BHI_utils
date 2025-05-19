@@ -143,4 +143,4 @@ class MCDropoutUncertaintyHyperModel(kt.HyperModel):
         # Set the trial score
         model.history = type('', (), {})()  # Dummy history
         model.history.history = {'auc': [auc]}
-        return model
+        return model.history.history
