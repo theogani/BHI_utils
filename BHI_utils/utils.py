@@ -37,8 +37,8 @@ def load_best_model(tuner, model_path=None):
     return fun
 
 
-def fine_tune(X_trn, y_trn, return_model_and_tuner=False, scaler=None, hyper_model=None, project_dir=None, fold=None,
-              kseed=None):
+def fine_tune(X_trn, y_trn, return_model_and_tuner=False, scaler=None, hyper_model=None, project_dir=None,
+              project_name=None, kseed=None, restore_best_weights=True, **kwargs):
     if scaler:
         X_trn = scaler.fit_transform(X_trn)
 
@@ -48,16 +48,10 @@ def fine_tune(X_trn, y_trn, return_model_and_tuner=False, scaler=None, hyper_mod
         objective=kt.Objective("val_auc", direction="max"),
         executions_per_trial=1,
         directory=project_dir,
-        project_name=f'fold_{fold}',
+        project_name=project_name,
         seed=kseed
     )
-    tuner.search(X_trn, y_trn, epochs=500, validation_split=0.2, callbacks=[EarlyStopping(monitor='val_auc',
-                                                                                          patience=20,
-                                                                                          mode='max',
-                                                                                          verbose=1,
-                                                                                          restore_best_weights=True),
-                                                                            TensorBoard(log_dir=project_dir / f'fold_{fold}' / 'logs'),
-                                                                            LambdaCallback(on_train_end=tf.keras.backend.clear_session)])
+    tuner.search(X_trn, y_trn, epochs=500, **kwargs)
 
     # Path to the best trial's directory
     best_trial = get_best_trial(tuner)
@@ -65,8 +59,9 @@ def fine_tune(X_trn, y_trn, return_model_and_tuner=False, scaler=None, hyper_mod
     # Build model with best parameters
     model = tuner.hypermodel.build(best_trial.hyperparameters)
 
-    # Load weights of best trial
-    model.load_weights(project_dir / f'fold_{fold}' / f'trial_{best_trial.trial_id}' / 'checkpoint.weights.h5')
+    if restore_best_weights:
+        # Load weights of best trial
+        model.load_weights(project_dir / project_name / f'trial_{best_trial.trial_id}' / 'checkpoint.weights.h5')
 
     if return_model_and_tuner:
         return model, tuner
@@ -236,33 +231,15 @@ def adapt_to_target(hyper_model, x_trn, y_trn, target_study, model_path, kseed=N
         hyper_model = fine_tune_on_source(hyper_model, x_source, y_source, model_path, **kwargs)
         del kwargs['next_hyper_model']
 
-    tuner = kt.RandomSearch(
-        hyper_model,
-        objective=kt.Objective("val_auc", direction="max"),
-        executions_per_trial=1,
-        max_trials=100,
-        directory=model_path,
-        project_name=target_study.replace('/', '') + suffix,
-        seed=kseed
-    )
 
-    tuner.search(x_trn, y_trn, epochs=500, kseed=kseed, target_study=target_study,
-                 callbacks=[EarlyStopping(monitor='val_auc',
-                                          patience=20,
-                                          mode='max',
-                                          verbose=1,
-                                          restore_best_weights=True),
-                            LambdaCallback(on_train_end=tf.keras.backend.clear_session)], **kwargs)
-
-    # Path to the best trial's directory
-    best_trial = get_best_trial(tuner)
-
-    # Build model with best parameters
-    model = tuner.hypermodel.build(best_trial.hyperparameters)
-
-    # Load weights of best trial
-    model.load_weights(model_path / (target_study.replace('/', '') + suffix) / f'trial_{best_trial.trial_id}' / 'checkpoint.weights.h5')
-    return model
+    return fine_tune(x_trn, y_trn, hyper_model=hyper_model, project_dir=model_path, kseed=kseed,
+                     project_name=target_study.replace('/', '') + suffix, target_study=target_study,
+                     callbacks=[EarlyStopping(monitor='val_auc',
+                                              patience=20,
+                                              mode='max',
+                                              verbose=1,
+                                              restore_best_weights=True),
+                                LambdaCallback(on_train_end=tf.keras.backend.clear_session)], **kwargs)
 
 def MonteCarloSelection(model, x, y, hp, num_samples=50, uncertainty_metric='var', **kwargs):
     """
@@ -305,14 +282,11 @@ def fine_tune_mc_dropout(hyper_model, x_source, y_source, model_path, next_hyper
     if kseed is not None:
         np.random.seed(kseed)
 
-    # Define the hypermodel
-    tuner = kt.RandomSearch(
-        hyper_model,
-        objective=kt.Objective("auc", direction="max"),
-        max_trials=100,
-        directory=model_path,
-        project_name="mc_dropout_fine_tune",
-        seed=kseed
-    )
-    tuner.search(x_source, y_source)
-    return next_hyper_model(hyper_model.model_fn, lambda model, x, y, hp: MonteCarloSelection(model, x, y, hp, **get_best_trial(tuner).hyperparameters.values))
+    _, tuner = fine_tune(x_source, y_source, project_dir=model_path, project_name="mc_dropout_fine_tune",
+                         hyper_model=hyper_model, restore_best_weights=False, return_model_and_tuner=True,
+                         kseed=kseed)
+
+    return next_hyper_model(hyper_model.model_fn,
+                            lambda model, x, y, hp: MonteCarloSelection(model, x, y, hp,
+                                                                        **get_best_trial(tuner).hyperparameters.values)
+                            )
