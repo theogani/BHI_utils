@@ -50,7 +50,7 @@ class ErmHyperModel(kt.HyperModel):
         super().__init__(**kwargs)
 
     def build(self, hp):
-        # Always create a new, randomly initialized model
+        tf.keras.backend.clear_session()
         model = self.model_fn()
         return model
 
@@ -83,7 +83,7 @@ class ActiveLearningHyperModel(kt.HyperModel):
         super().__init__(**kwargs)
 
     def build(self, hp):
-        # Always create a new, randomly initialized model
+        tf.keras.backend.clear_session()
         model = self.model_fn()
         return model
 
@@ -125,7 +125,7 @@ class MCDropoutUncertaintyHyperModel(kt.HyperModel):
         super().__init__(**kwargs)
 
     def build(self, hp):
-        # Build and load a trained model (or train here if needed)
+        tf.keras.backend.clear_session()
         return self.model_fn()
 
     def fit(self, hp, model, *args, **kwargs):
