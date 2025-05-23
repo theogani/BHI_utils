@@ -225,7 +225,7 @@ def evaluate_and_plot(model, X_test, y_test, metric='accuracy', num_samples=50):
 
 def adapt_to_target(hyper_model, x_trn, y_trn, target_study, model_path, kseed=None, suffix='',
                     fine_tune_on_source=None, **kwargs):
-    if fine_tune_on_source:
+    if fine_tune_on_source is not None:
         # Get the source study data
         x_source, y_source = x_trn[kwargs['studies'] == kwargs['source_study']], y_trn[kwargs['studies'] == kwargs['source_study']]
 
