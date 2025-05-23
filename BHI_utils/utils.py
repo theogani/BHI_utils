@@ -114,6 +114,7 @@ def model_evaluation(mdl, x, y, sensitive_attributes=None):
             )
             metrics[f'{col} Accuracy Parity'] = (min(accuracy_rates.values()) / max(accuracy_rates.values())) if max(accuracy_rates.values()) else np.nan
             metrics[f'{col} F1-score Parity'] = (min(f1_rates.values()) / max(f1_rates.values())) if max(f1_rates.values()) else np.nan
+            metrics[f'{col} fairness performance trade-off'] = (2*metrics[f'{col} Equalized Odds']*metrics['F1 Score'])/(metrics[f'{col} Equalized Odds'] + metrics['F1 Score'])
 
         # # Intersectional group metrics
         # sensitive_groups = sensitive_attributes.apply(tuple, axis=1)
@@ -165,8 +166,8 @@ def plot_colored_matrix(df, cmap="plasma", **kwargs):
             kwargs['vmin'] = -np.nanmax(np.abs(df.values))
         if 'vmax' not in kwargs:
             kwargs['vmax'] = np.nanmax(np.abs(df.values))
-        return sns.heatmap(df, annot=True, fmt=".3f", cmap=cmap, cbar=True, **kwargs)
-    return sns.heatmap(df, annot=True, fmt=".3f", cmap=cmap, cbar=True, **kwargs)
+        return sns.heatmap(df, annot=True, fmt=".3f", cmap=cmap, cbar=True, xticklabels=45, **kwargs)
+    return sns.heatmap(df, annot=True, fmt=".3f", cmap=cmap, cbar=True, xticklabels=45, **kwargs)
 
 def monte_carlo_dropout_predictions(model, X, num_samples=50):
     """
@@ -253,24 +254,22 @@ def MonteCarloSelection(model, x, y, hp, num_samples=50, uncertainty_metric='var
     mean_predictions, uncertainty = mc_predictions.mean(axis=0), calculate_uncertainty(mc_predictions, uncertainty_metric)
 
     # Select top 20% most uncertain for annotation
-    uncertain_idx = np.argsort(uncertainty)[-int(0.2 * len(x)):]
+    uncertain_idx = np.argsort(uncertainty)
+    uncertain_idx, certain_idx = uncertain_idx[-int(0.1 * len(x)):], uncertain_idx[:-int(0.1 * len(x))]
 
     # Use hyperparameter for pseudo-labeling
     pseudo_idx = np.argsort(uncertainty)[:int(hp.Float("pseudo %", min_value=0., max_value=0.5, step=0.05) * len(x))]
 
     # Split uncertain samples for training and validation
-    x_uncertain_train, x_uncertain_val, y_uncertain_train, y_uncertain_val = train_test_split(
-        x[uncertain_idx],
-        y[uncertain_idx],
-        test_size=0.5, random_state=kseed)
+    _, x_val, _, y_val = train_test_split(x[uncertain_idx], y[uncertain_idx], test_size=int(0.1 * len(x)), random_state=kseed)
 
     return (
-        x_uncertain_train,
-        x_uncertain_val,
+        x[uncertain_idx],
+        x_val,
         x[pseudo_idx],
         np.empty((0, *x.shape[1:]), dtype=x.dtype),
-        y_uncertain_train,
-        y_uncertain_val,
+        y[uncertain_idx],
+        y_val,
         (mean_predictions[pseudo_idx] > 0.5).astype(int),
         np.empty((0, *y.shape[1:]), dtype=y.dtype)
     )
