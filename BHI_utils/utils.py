@@ -263,7 +263,7 @@ def MonteCarloSelection(model, x, y, hp, num_samples=50, uncertainty_metric='var
     pseudo_idx = np.argsort(uncertainty)[:int(hp.Float("pseudo %", min_value=0., max_value=0.5, step=0.05) * len(x))]
 
     # Split uncertain samples for training and validation
-    _, x_val, _, y_val = train_test_split(x[uncertain_idx], y[uncertain_idx], test_size=int(0.1 * len(x)), random_state=kseed)
+    _, x_val, _, y_val = train_test_split(x[certain_idx], y[certain_idx], test_size=int(0.1 * len(x)), random_state=kseed)
 
     return (
         x[uncertain_idx],
