@@ -44,6 +44,10 @@ class InitialModel(kt.HyperModel):
                                tf.keras.metrics.AUC(curve='PR', name='auprc')])
         return model
 
+    def fit(self, hp, model, *args, **kwargs):
+        del kwargs['kseed']  # Remove kseed from kwargs
+        return model.fit(*args, **kwargs)
+
 class ErmHyperModel(kt.HyperModel):
     def __init__(self, model_fn, **kwargs):
         self.model_fn = model_fn
