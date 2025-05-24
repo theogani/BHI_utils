@@ -223,18 +223,18 @@ def evaluate_and_plot(model, X_test, y_test, metric='accuracy', num_samples=50):
     plt.show()
 
 
-def adapt_to_target(hyper_model, x_trn, y_trn, target_study, model_path, kseed=None, suffix='',
+def adapt_to_target(hyper_model, x_trn, y_trn, target_study, model_path, suffix='',
                     fine_tune_on_source=None, **kwargs):
     if fine_tune_on_source is not None:
         # Get the source study data
         source_ids = kwargs['studies'] == kwargs['source_study']
         x_source, y_source = x_trn[source_ids], y_trn[source_ids]
 
-        hyper_model = fine_tune_on_source(hyper_model, x_source, y_source, model_path, kseed=kseed, **kwargs)
+        hyper_model = fine_tune_on_source(hyper_model, x_source, y_source, model_path, **kwargs)
         del kwargs['next_hyper_model']
 
 
-    return fine_tune(x_trn, y_trn, hyper_model=hyper_model, project_dir=model_path, kseed=kseed,
+    return fine_tune(x_trn, y_trn, hyper_model=hyper_model, project_dir=model_path,
                      project_name=target_study.replace('/', '') + suffix, target_study=target_study,
                      callbacks=[EarlyStopping(monitor='val_auc',
                                               patience=20,
