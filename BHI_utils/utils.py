@@ -166,8 +166,14 @@ def plot_colored_matrix(df, cmap="plasma", **kwargs):
             kwargs['vmin'] = -np.nanmax(np.abs(df.values))
         if 'vmax' not in kwargs:
             kwargs['vmax'] = np.nanmax(np.abs(df.values))
-        return sns.heatmap(df, annot=True, fmt=".3f", cmap=cmap, cbar=True, xticklabels=45, **kwargs)
-    return sns.heatmap(df, annot=True, fmt=".3f", cmap=cmap, cbar=True, xticklabels=45, **kwargs)
+        ax = sns.heatmap(df, annot=True, fmt=".3f", cmap=cmap, cbar=True, **kwargs)
+        plt.xticks(rotation=45)
+        plt.show()
+        return ax
+    ax = sns.heatmap(df, annot=True, fmt=".3f", cmap=cmap, cbar=True, **kwargs)
+    plt.xticks(rotation=45)
+    plt.show()
+    return ax
 
 def monte_carlo_dropout_predictions(model, X, num_samples=50):
     """
