@@ -247,8 +247,7 @@ def MonteCarloSelection(model, x, y, hp, num_samples=50, uncertainty_metric='var
     """
     Perform Monte Carlo Dropout predictions and select samples based on uncertainty.
     """
-    kseed = kwargs.get('kseed', 0)
-    np.random.seed(kseed)
+    np.random.seed(kwargs['kseed'])
 
     # Get MC Dropout predictions and calculate uncertainty
     mc_predictions = monte_carlo_dropout_predictions(model, x, num_samples)
@@ -262,7 +261,7 @@ def MonteCarloSelection(model, x, y, hp, num_samples=50, uncertainty_metric='var
     pseudo_idx = np.argsort(uncertainty)[:int(hp.Float("pseudo %", min_value=0., max_value=0.5, step=0.05) * len(x))]
 
     # Split uncertain samples for training and validation
-    _, x_val, _, y_val = train_test_split(x[certain_idx], y[certain_idx], test_size=int(0.1 * len(x)), random_state=kseed)
+    _, x_val, _, y_val = train_test_split(x[certain_idx], y[certain_idx], test_size=int(0.1 * len(x)), random_state=kwargs['kseed'])
 
     return (
         x[uncertain_idx],

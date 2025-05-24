@@ -95,8 +95,7 @@ class ActiveLearningHyperModel(kt.HyperModel):
 
         X, y = args[0], args[1]
         studies, target_study = kwargs['studies'], kwargs['target_study']
-        kseed = kwargs.get('kseed', 42)
-        np.random.seed(kseed)
+        np.random.seed(kwargs['kseed'])
 
         # Split target study data
         x_target, y_target = X[studies == target_study], y[studies == target_study]
