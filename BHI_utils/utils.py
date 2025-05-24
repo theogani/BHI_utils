@@ -44,7 +44,7 @@ def fine_tune(X_trn, y_trn, return_model_and_tuner=False, scaler=None, hyper_mod
 
     tuner = kt.RandomSearch(
         hyper_model,
-        max_trials=100,
+        max_trials=5,
         objective=kt.Objective("val_auc", direction="max"),
         executions_per_trial=1,
         directory=project_dir,
