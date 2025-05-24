@@ -93,9 +93,13 @@ class ActiveLearningHyperModel(kt.HyperModel):
         # Use a hyperparameter threshold to distinguish certain and uncertain samples.
         # Use certain samples with pseudo-labels for training.
 
-        x_target, y_target = args[0], args[1]
+        X, y = args[0], args[1]
+        studies, target_study = kwargs['studies'], kwargs['target_study']
         kseed = kwargs.get('kseed', 42)
         np.random.seed(kseed)
+
+        # Split target study data
+        x_target, y_target = X[studies == target_study], y[studies == target_study]
 
         x_selected_train, x_selected_val, x_pseudo_train, x_pseudo_val, y_selected_train, y_selected_val, y_pseudo_train, y_pseudo_val = self.select(model=mdl, x=x_target, y=y_target, hp=hp, **kwargs)
 
@@ -111,7 +115,7 @@ class ActiveLearningHyperModel(kt.HyperModel):
         y_val = np.concatenate([y_selected_val, y_pseudo_val])
 
         # Remove used kwargs
-        # del kwargs['kseed'], kwargs['studies'], kwargs['source_study'], kwargs['target_study']
+        del kwargs['kseed'], kwargs['studies'], kwargs['source_study'], kwargs['target_study']
 
         return mdl.fit(x_train, y_train, validation_data=(x_val, y_val), **kwargs)
 
