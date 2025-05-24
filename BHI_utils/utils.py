@@ -227,9 +227,10 @@ def adapt_to_target(hyper_model, x_trn, y_trn, target_study, model_path, kseed=N
                     fine_tune_on_source=None, **kwargs):
     if fine_tune_on_source is not None:
         # Get the source study data
-        x_source, y_source = x_trn[kwargs['studies'] == kwargs['source_study']], y_trn[kwargs['studies'] == kwargs['source_study']]
+        source_ids = kwargs['studies'] == kwargs['source_study']
+        x_source, y_source = x_trn[source_ids], y_trn[source_ids]
 
-        hyper_model = fine_tune_on_source(hyper_model, x_source, y_source, model_path, **kwargs)
+        hyper_model = fine_tune_on_source(hyper_model, x_source, y_source, model_path, kseed=kseed, **kwargs)
         del kwargs['next_hyper_model']
 
 
@@ -246,7 +247,7 @@ def MonteCarloSelection(model, x, y, hp, num_samples=50, uncertainty_metric='var
     """
     Perform Monte Carlo Dropout predictions and select samples based on uncertainty.
     """
-    kseed = kwargs.get('kseed', 42)
+    kseed = kwargs.get('kseed', 0)
     np.random.seed(kseed)
 
     # Get MC Dropout predictions and calculate uncertainty
@@ -274,12 +275,11 @@ def MonteCarloSelection(model, x, y, hp, num_samples=50, uncertainty_metric='var
         np.empty((0, *y.shape[1:]), dtype=y.dtype)
     )
 
-def fine_tune_mc_dropout(hyper_model, x_source, y_source, model_path, next_hyper_model, kseed=None, **kwargs):
+def fine_tune_mc_dropout(hyper_model, x_source, y_source, model_path, next_hyper_model, kseed, **kwargs):
     """
     Fine-tune the model using Monte Carlo Dropout.
     """
-    if kseed is not None:
-        np.random.seed(kseed)
+    np.random.seed(kseed)
 
     _, tuner = fine_tune(x_source, y_source, project_dir=model_path, project_name="mc_dropout_fine_tune",
                          hyper_model=hyper_model, restore_best_weights=False, return_model_and_tuner=True,
