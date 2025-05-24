@@ -38,7 +38,7 @@ def load_best_model(tuner, model_path=None):
 
 
 def fine_tune(X_trn, y_trn, return_model_and_tuner=False, scaler=None, hyper_model=None, project_dir=None,
-              project_name=None, kseed=None, restore_best_weights=True, **kwargs):
+              project_name=None, restore_best_weights=True, **kwargs):
     if scaler:
         X_trn = scaler.fit_transform(X_trn)
 
@@ -49,7 +49,7 @@ def fine_tune(X_trn, y_trn, return_model_and_tuner=False, scaler=None, hyper_mod
         executions_per_trial=1,
         directory=project_dir,
         project_name=project_name,
-        seed=kseed
+        seed=kwargs['kseed']
     )
     tuner.search(X_trn, y_trn, epochs=500, **kwargs)
 
