@@ -106,15 +106,15 @@ def model_evaluation(mdl, x, y, sensitive_attributes=None):
                 tn, fp, fn, tp = confusion_matrix(y_true_group, y_pred_group, labels=[0, 1]).ravel()
                 false_positive_rates[group] = fp / (fp + tn) if (fp + tn) > 0 else 0
 
-            metrics[f'{col} Demographic Parity'] = (min(positive_rates.values()) / max(positive_rates.values())) if max(positive_rates.values()) else np.nan
-            metrics[f'{col} Equal Opportunity'] = (min(true_positive_rates.values()) / max(true_positive_rates.values())) if max(true_positive_rates.values()) else np.nan
-            metrics[f'{col} Equalized Odds'] = np.nanmean(
+            metrics[f'{col} Demog Par'] = (min(positive_rates.values()) / max(positive_rates.values())) if max(positive_rates.values()) else np.nan
+            metrics[f'{col} Equal Opp'] = (min(true_positive_rates.values()) / max(true_positive_rates.values())) if max(true_positive_rates.values()) else np.nan
+            metrics[f'{col} Equal Odds'] = np.nanmean(
                 [(min(true_positive_rates.values()) / max(true_positive_rates.values())) if max(true_positive_rates.values()) else np.nan,
                  (min(false_positive_rates.values()) / max(false_positive_rates.values())) if max(false_positive_rates.values()) else np.nan]
             )
-            metrics[f'{col} Accuracy Parity'] = (min(accuracy_rates.values()) / max(accuracy_rates.values())) if max(accuracy_rates.values()) else np.nan
-            metrics[f'{col} F1-score Parity'] = (min(f1_rates.values()) / max(f1_rates.values())) if max(f1_rates.values()) else np.nan
-            metrics[f'{col} fairness performance trade-off'] = (2*metrics[f'{col} Equalized Odds']*metrics['F1 Score'])/(metrics[f'{col} Equalized Odds'] + metrics['F1 Score'])
+            metrics[f'{col} Acc Par'] = (min(accuracy_rates.values()) / max(accuracy_rates.values())) if max(accuracy_rates.values()) else np.nan
+            metrics[f'{col} F1 Par'] = (min(f1_rates.values()) / max(f1_rates.values())) if max(f1_rates.values()) else np.nan
+            metrics[f'{col} fair perf t-off'] = (2*metrics[f'{col} Equal Odds']*metrics['F1 Score'])/(metrics[f'{col} Equal Odds'] + metrics['F1 Score'])
 
         # # Intersectional group metrics
         # sensitive_groups = sensitive_attributes.apply(tuple, axis=1)
