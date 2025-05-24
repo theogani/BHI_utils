@@ -133,7 +133,7 @@ class MCDropoutUncertaintyHyperModel(kt.HyperModel):
 
     def fit(self, hp, model, *args, **kwargs):
         num_samples = hp.Int('num_samples', 10, 100, step=10)
-        metric_name = hp.Choice('uncertainty_metric', ['var', 'std', 'entropy'])
+        metric_name = hp.Choice('uncertainty_metric', ['total_variance', 'std', 'entropy'])
 
         # MC Dropout predictions
         mc_preds = monte_carlo_dropout_predictions(model, args[0], num_samples=num_samples)

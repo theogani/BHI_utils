@@ -186,6 +186,11 @@ def calculate_uncertainty(predictions, metric_name):
     elif metric_name == 'entropy':
         mean_preds = predictions.mean(axis=0)
         return -mean_preds * np.log(mean_preds + 1e-8) - (1 - mean_preds) * np.log(1 - mean_preds + 1e-8)
+    elif metric_name == 'total_variance':
+        mean = predictions.mean(axis=0)
+        # Compute the squared differences from the mean
+        squared_diffs = (predictions - mean) ** 2
+        return np.sum(squared_diffs) / len(predictions)
     else:
         raise ValueError("Invalid uncertainty metric")
 
