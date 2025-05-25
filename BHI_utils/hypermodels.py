@@ -122,10 +122,16 @@ class ActiveLearningHyperModel(kt.HyperModel):
         class_weights = compute_class_weight(class_weight='balanced', classes=classes, y=y_selected_train)
         class_weight_dict = dict(zip(classes, class_weights))
 
+        if 'sample_weight' in kwargs:
+            class_weights = np.array([class_weight_dict[y] for y in y_train])
+            kwargs['sample_weight'] = kwargs['sample_weight'] + class_weights
+        else:
+            kwargs['class_weight'] = class_weight_dict
+
         # Remove used kwargs
         del kwargs['kseed'], kwargs['studies'], kwargs['source_study'], kwargs['target_study']
 
-        return mdl.fit(x_train, y_train, validation_data=(x_val, y_val), class_weight=class_weight_dict, **kwargs)
+        return mdl.fit(x_train, y_train, validation_data=(x_val, y_val), **kwargs)
 
 class MCDropoutUncertaintyHyperModel(kt.HyperModel):
     def __init__(self, model_fn, **kwargs):
