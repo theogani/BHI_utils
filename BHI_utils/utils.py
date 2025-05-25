@@ -196,7 +196,7 @@ def calculate_uncertainty(predictions, metric_name):
         mean = predictions.mean(axis=0)
         # Compute the squared differences from the mean
         squared_diffs = (predictions - mean) ** 2
-        return np.sum(squared_diffs) / len(predictions)
+        return np.sum(squared_diffs, axis=0) / len(predictions)
     else:
         raise ValueError("Invalid uncertainty metric")
 
@@ -254,32 +254,34 @@ def adapt_to_target(hyper_model, x_trn, y_trn, target_study, model_path, suffix=
                                               restore_best_weights=True),
                                 LambdaCallback(on_train_end=tf.keras.backend.clear_session)], **kwargs)
 
-def MonteCarloSelection(model, x, y, hp, num_samples=50, uncertainty_metric='var', **kwargs):
+def MonteCarloSelection(model, x, y, hp, num_samples, uncertainty_metric, **kwargs):
     """
     Perform Monte Carlo Dropout predictions and select samples based on uncertainty.
     """
     np.random.seed(kwargs['kseed'])
 
+    # Split uncertain samples for training and validation
+    x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=int(0.1 * len(x)), random_state=kwargs['kseed'])
+
     # Get MC Dropout predictions and calculate uncertainty
-    mc_predictions = monte_carlo_dropout_predictions(model, x, num_samples)
+    mc_predictions = monte_carlo_dropout_predictions(model, x_train, num_samples)
     mean_predictions, uncertainty = mc_predictions.mean(axis=0), calculate_uncertainty(mc_predictions, uncertainty_metric)
 
     # Select top 20% most uncertain for annotation
-    uncertain_idx = np.argsort(uncertainty)
-    uncertain_idx, certain_idx = uncertain_idx[-int(0.1 * len(x)):], uncertain_idx[:-int(0.1 * len(x))]
+    ascending_uncertainty_idx = np.argsort(uncertainty)
+
+    uncertain_idx = ascending_uncertainty_idx[-int(0.1 * len(x)):]
 
     # Use hyperparameter for pseudo-labeling
-    pseudo_idx = np.argsort(uncertainty)[:int(hp.Float("pseudo %", min_value=0., max_value=0.5, step=0.05) * len(x))]
+    pseudo_idx = ascending_uncertainty_idx[:int(hp.Float("pseudo %", min_value=0., max_value=0.5, step=0.05) * len(x))]
 
-    # Split uncertain samples for training and validation
-    _, x_val, _, y_val = train_test_split(x[certain_idx], y[certain_idx], test_size=int(0.1 * len(x)), random_state=kwargs['kseed'])
 
     return (
-        x[uncertain_idx],
+        x_train[uncertain_idx],
         x_val,
-        x[pseudo_idx],
+        x_train[pseudo_idx],
         np.empty((0, *x.shape[1:]), dtype=x.dtype),
-        y[uncertain_idx],
+        y_train[uncertain_idx],
         y_val,
         (mean_predictions[pseudo_idx] > 0.5).astype(int),
         np.empty((0, *y.shape[1:]), dtype=y.dtype)

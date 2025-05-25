@@ -6,6 +6,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score
 from BHI_utils.utils import monte_carlo_dropout_predictions, calculate_uncertainty
+from sklearn.utils.class_weight import compute_class_weight
 
 
 class InitialModel(kt.HyperModel):
@@ -117,10 +118,14 @@ class ActiveLearningHyperModel(kt.HyperModel):
         x_val = np.concatenate([x_selected_val, x_pseudo_val])
         y_val = np.concatenate([y_selected_val, y_pseudo_val])
 
+        classes = np.unique(y_selected_train)
+        class_weights = compute_class_weight(class_weight='balanced', classes=classes, y=y_selected_train)
+        class_weight_dict = dict(zip(classes, class_weights))
+
         # Remove used kwargs
         del kwargs['kseed'], kwargs['studies'], kwargs['source_study'], kwargs['target_study']
 
-        return mdl.fit(x_train, y_train, validation_data=(x_val, y_val), **kwargs)
+        return mdl.fit(x_train, y_train, validation_data=(x_val, y_val), class_weight=class_weight_dict, **kwargs)
 
 class MCDropoutUncertaintyHyperModel(kt.HyperModel):
     def __init__(self, model_fn, **kwargs):
