@@ -118,8 +118,8 @@ class ActiveLearningHyperModel(kt.HyperModel):
         x_val = np.concatenate([x_selected_val, x_pseudo_val])
         y_val = np.concatenate([y_selected_val, y_pseudo_val])
 
-        class_weights = compute_class_weight(class_weight='balanced', classes=[0, 1], y=y_selected_train)
-        class_weight_dict = dict(zip([0, 1], class_weights))
+        class_weights = compute_class_weight(class_weight='balanced', classes=np.array([0, 1]), y=y_selected_train)
+        class_weight_dict = dict(zip(np.array([0, 1]), class_weights))
 
         if 'sample_weight' in kwargs:
             class_weights = np.array([class_weight_dict[y] for y in y_train])
