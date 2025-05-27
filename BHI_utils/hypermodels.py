@@ -91,13 +91,16 @@ class ActiveLearningHyperModel(kt.HyperModel):
         tf.keras.backend.clear_session()
         model = self.model_fn()
         current_optimizer = model.optimizer
-        current_metrics = model.metrics
 
         # Recompile with a new loss function, e.g., 'mean_squared_error'
         model.compile(
             optimizer=current_optimizer,
             loss='binary_focal_crossentropy',
-            metrics=current_metrics
+            metrics=['accuracy',
+                     tf.keras.metrics.Precision(name='precision'),
+                     tf.keras.metrics.Recall(name='recall'),
+                     tf.keras.metrics.AUC(name='auc'),
+                     tf.keras.metrics.AUC(curve='PR', name='auprc')]
         )
         return model
 
