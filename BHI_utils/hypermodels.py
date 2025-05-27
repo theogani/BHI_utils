@@ -96,7 +96,7 @@ class ActiveLearningHyperModel(kt.HyperModel):
         # Recompile with a new loss function, e.g., 'mean_squared_error'
         model.compile(
             optimizer=current_optimizer,
-            loss='binary_focal_crossentropy',
+            loss=tf.keras.losses.BinaryFocalCrossentropy(reduction="sum_over_batch_size"),
             metrics=current_metrics
         )
         return model
