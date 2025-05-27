@@ -90,15 +90,17 @@ class ActiveLearningHyperModel(kt.HyperModel):
     def build(self, hp):
         tf.keras.backend.clear_session()
         model = self.model_fn()
-        # current_optimizer = model.optimizer
-        # current_metrics = model.metrics
-        #
-        # # Recompile with a new loss function, e.g., 'mean_squared_error'
-        # model.compile(
-        #     optimizer=current_optimizer,
-        #     loss='binary_focal_crossentropy',
-        #     metrics=current_metrics
-        # )
+        current_optimizer = model.optimizer
+        current_metrics = model.metrics
+
+        print(current_optimizer, current_metrics)
+
+        # Recompile with a new loss function, e.g., 'mean_squared_error'
+        model.compile(
+            optimizer=current_optimizer,
+            loss='binary_focal_crossentropy',
+            metrics=current_metrics
+        )
         return model
 
     def fit(self, hp, mdl, *args, **kwargs):
