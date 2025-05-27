@@ -142,7 +142,7 @@ class ActiveLearningHyperModel(kt.HyperModel):
             kwargs['sample_weight'] = kwargs['sample_weight'] + class_weights
         else:
             kwargs['class_weight'] = class_weight_dict
-
+        print(kwargs['sample_weight'])
         # Remove used kwargs
         del kwargs['kseed'], kwargs['studies'], kwargs['source_study'], kwargs['target_study']
 
