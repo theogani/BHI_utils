@@ -93,8 +93,6 @@ class ActiveLearningHyperModel(kt.HyperModel):
         current_optimizer = model.optimizer
         current_metrics = model.metrics
 
-        print(current_optimizer, current_metrics)
-
         # Recompile with a new loss function, e.g., 'mean_squared_error'
         model.compile(
             optimizer=current_optimizer,
@@ -144,7 +142,7 @@ class ActiveLearningHyperModel(kt.HyperModel):
             kwargs['sample_weight'] = kwargs['sample_weight'] + class_weights
         else:
             kwargs['class_weight'] = class_weight_dict
-        print(kwargs['sample_weight'].shape)
+
         # Remove used kwargs
         del kwargs['kseed'], kwargs['studies'], kwargs['source_study'], kwargs['target_study']
 
