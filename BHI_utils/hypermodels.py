@@ -4,7 +4,7 @@ from tensorflow.keras.layers import Dense, Dropout, Input, BatchNormalization
 import tensorflow as tf
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, roc_curve
 from BHI_utils.utils import monte_carlo_dropout_predictions, calculate_uncertainty
 from sklearn.utils.class_weight import compute_class_weight
 
@@ -154,6 +154,7 @@ class ActiveLearningHyperModel(kt.HyperModel):
 class MCDropoutUncertaintyHyperModel(kt.HyperModel):
     def __init__(self, model_fn, **kwargs):
         self.model_fn = model_fn
+        self.uncertainty_threshold = -1  # Default value, will be set during fit
         super().__init__(**kwargs)
 
     def build(self, hp):
@@ -171,6 +172,10 @@ class MCDropoutUncertaintyHyperModel(kt.HyperModel):
         y_pred = (mc_preds.mean(axis=0) > 0.5).astype(int)
         incorrect = (y_pred != args[1].flatten()).astype(int) # 1 for incorrect, 0 for correct
         auc = roc_auc_score(incorrect, uncertainty)
+
+        fpr, tpr, thresholds = roc_curve(incorrect, uncertainty)
+        youden_index = tpr - fpr
+        self.uncertainty_threshold = thresholds[np.argmax(youden_index)]
 
         # Set the trial score
         model.history = type('', (), {})()  # Dummy history
