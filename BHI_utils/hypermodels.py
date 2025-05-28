@@ -82,12 +82,14 @@ class ErmHyperModel(kt.HyperModel):
         return mdl.fit(x_adapt, y_adapt, validation_data=(x_target_val, y_target_val), **kwargs)
 
 class ActiveLearningHyperModel(kt.HyperModel):
-    def __init__(self, model_fn, select_fn, **kwargs):
+    def __init__(self, model_fn, select_fn, uncertainty_threshold, **kwargs):
         self.model_fn = model_fn
         self.select = select_fn
+        self.uncertainty_threshold = uncertainty_threshold
         super().__init__(**kwargs)
 
     def build(self, hp):
+        hp.Fixed('uncertainty_threshold', self.uncertainty_threshold)
         tf.keras.backend.clear_session()
         model = self.model_fn()
         current_optimizer = model.optimizer
@@ -154,7 +156,6 @@ class ActiveLearningHyperModel(kt.HyperModel):
 class MCDropoutUncertaintyHyperModel(kt.HyperModel):
     def __init__(self, model_fn, **kwargs):
         self.model_fn = model_fn
-        self.uncertainty_threshold = -1  # Default value, will be set during fit
         super().__init__(**kwargs)
 
     def build(self, hp):
@@ -175,7 +176,7 @@ class MCDropoutUncertaintyHyperModel(kt.HyperModel):
 
         fpr, tpr, thresholds = roc_curve(incorrect, uncertainty)
         youden_index = tpr - fpr
-        self.uncertainty_threshold = thresholds[np.argmax(youden_index)]
+        hp.Fixed('uncertainty_threshold', thresholds[np.argmax(youden_index)])
 
         # Set the trial score
         model.history = type('', (), {})()  # Dummy history
