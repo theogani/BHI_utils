@@ -82,7 +82,7 @@ class ErmHyperModel(kt.HyperModel):
         return mdl.fit(x_adapt, y_adapt, validation_data=(x_target_val, y_target_val), **kwargs)
 
 class ActiveLearningHyperModel(kt.HyperModel):
-    def __init__(self, model_fn, select_fn, uncertainty_threshold, **kwargs):
+    def __init__(self, model_fn, select_fn, uncertainty_threshold=None, **kwargs):
         self.model_fn = model_fn
         self.select = select_fn
         self.uncertainty_threshold = uncertainty_threshold
