@@ -92,18 +92,20 @@ class ActiveLearningHyperModel(kt.HyperModel):
         hp.Fixed('uncertainty_threshold', self.uncertainty_threshold)
         tf.keras.backend.clear_session()
         model = self.model_fn()
-        current_optimizer = model.optimizer
+        loss = hp.Choice('uncertainty_metric', ['binary_crossentropy', 'binary_focal_crossentropy'])
 
-        # Recompile with a new loss function, e.g., 'mean_squared_error'
-        model.compile(
-            optimizer=current_optimizer,
-            loss='binary_focal_crossentropy',
-            metrics=['accuracy',
-                     tf.keras.metrics.Precision(name='precision'),
-                     tf.keras.metrics.Recall(name='recall'),
-                     tf.keras.metrics.AUC(name='auc'),
-                     tf.keras.metrics.AUC(curve='PR', name='auprc')]
-        )
+        if loss == 'binary_focal_crossentropy':
+            current_optimizer = model.optimizer
+            # Recompile with a new loss function
+            model.compile(
+                optimizer=current_optimizer,
+                loss=loss,
+                metrics=['accuracy',
+                         tf.keras.metrics.Precision(name='precision'),
+                         tf.keras.metrics.Recall(name='recall'),
+                         tf.keras.metrics.AUC(name='auc'),
+                         tf.keras.metrics.AUC(curve='PR', name='auprc')]
+            )
         return model
 
     def fit(self, hp, mdl, *args, **kwargs):
