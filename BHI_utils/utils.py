@@ -302,7 +302,7 @@ def fine_tune_mc_dropout(hyper_model, x_source, y_source, model_path, next_hyper
     """
     np.random.seed(kwargs['kseed'])
 
-    _, tuner = fine_tune(x_source, y_source, project_dir=model_path, project_name="mc_dropout_fine_tune_thr",
+    _, tuner = fine_tune(x_source, y_source, project_dir=model_path, project_name="mc_dropout_fine_tune",
                          hyper_model=hyper_model, restore_best_weights=False, return_model_and_tuner=True,
                          kseed=kwargs['kseed'])
 
