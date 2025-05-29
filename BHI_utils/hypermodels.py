@@ -110,30 +110,32 @@ class ActiveLearningHyperModel(kt.HyperModel):
 
         # Prepare training data
         x_train = np.concatenate([x_selected_train, x_pseudo_train])
+        y_train = np.concatenate([y_selected_train, y_pseudo_train])
+
         if ('pseudo_weights' in kwargs) and (kwargs['pseudo_weights']):
             kwargs['sample_weight'] = np.concatenate([np.full(len(x_selected_train), 1),
                                                       np.full(len(x_pseudo_train), hp.Float("pseudo_weight", min_value=0.3, max_value=0.9, step=0.3))])
             del kwargs['pseudo_weights']
-        y_train = np.concatenate([y_selected_train, y_pseudo_train])
 
         x_val = np.concatenate([x_selected_val, x_pseudo_val])
         y_val = np.concatenate([y_selected_val, y_pseudo_val])
 
         classes = np.array([0, 1])
-        if np.all(np.isin(classes, np.unique(y_selected_train))):
-            class_weights = compute_class_weight(class_weight='balanced', classes=classes, y=y_selected_train)
-        elif np.all(np.isin(classes, np.unique(y_train))):
-            class_weights = compute_class_weight(class_weight='balanced', classes=classes, y=y_train)
-        else:
-            class_weights = np.array([0.2 if np.isin(i, np.unique(y_selected_train)) else 0.8 for i in classes])
+        class_weights = compute_class_weight(class_weight='balanced', classes=classes, y=y_selected_train)
+        # if np.all(np.isin(classes, np.unique(y_selected_train))):
+        #     class_weights = compute_class_weight(class_weight='balanced', classes=classes, y=y_selected_train)
+        # elif np.all(np.isin(classes, np.unique(y_train))):
+        #     class_weights = compute_class_weight(class_weight='balanced', classes=classes, y=y_train)
+        # else:
+        #     class_weights = np.array([0.2 if np.isin(i, np.unique(y_selected_train)) else 0.8 for i in classes])
 
         class_weight_dict = dict(zip(classes, class_weights))
 
-        if 'sample_weight' in kwargs:
-            class_weights = np.array([class_weight_dict[y] for y in y_train])
-            kwargs['sample_weight'] = kwargs['sample_weight'] + class_weights
-        else:
-            kwargs['class_weight'] = class_weight_dict
+        # if 'sample_weight' in kwargs:
+        #     class_weights = np.array([class_weight_dict[y] for y in y_train])
+        #     kwargs['sample_weight'] = kwargs['sample_weight'] + class_weights
+        # else:
+        kwargs['class_weight'] = class_weight_dict
 
         # Remove used kwargs
         del kwargs['kseed'], kwargs['source_study']
