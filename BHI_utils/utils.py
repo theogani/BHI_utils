@@ -300,4 +300,4 @@ def fine_tune_mc_dropout(hyper_model, x_source, y_source, model_path, next_hyper
     def select_fn(model, x, y, hp, **kwargs):
         return MonteCarloSelection(model, x, y, hp, **get_best_trial(tuner).hyperparameters.values, **kwargs)
 
-    return next_hyper_model(hyper_model.model_fn, select_fn)
+    return next_hyper_model(hyper_model.model_fn, select_fn, uncertainty_threshold=get_best_trial(tuner).hyperparameters.values['uncertainty_threshold'])
