@@ -95,14 +95,12 @@ class ActiveLearningHyperModel(kt.HyperModel):
         model = self.model_fn()
         return model
 
-    def fit(self, hp, mdl, *args, **kwargs):
+    def fit(self, hp, mdl, X, y, studies, target_study, **kwargs):
         # Rank the informativeness of samples in the target study based on Monte Carlo Dropout.
         # Select the 20% most uncertain samples to annotate.
         # Use a hyperparameter threshold to distinguish certain and uncertain samples.
         # Use certain samples with pseudo-labels for training.
 
-        X, y = args[0], args[1]
-        studies, target_study = kwargs['studies'], kwargs['target_study']
         np.random.seed(kwargs['kseed'])
 
         # Split target study data
@@ -138,7 +136,7 @@ class ActiveLearningHyperModel(kt.HyperModel):
             kwargs['class_weight'] = class_weight_dict
 
         # Remove used kwargs
-        del kwargs['kseed'], kwargs['studies'], kwargs['source_study'], kwargs['target_study']
+        del kwargs['kseed'], kwargs['source_study']
 
         return mdl.fit(x_train, y_train, validation_data=(x_val, y_val), **kwargs)
 
