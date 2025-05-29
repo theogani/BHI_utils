@@ -273,7 +273,8 @@ def MonteCarloSelection(model, x, y, hp, num_samples, uncertainty_metric, **kwar
     uncertain_idx = ascending_uncertainty_idx[-int(0.1 * len(x)):]
 
     # Use hyperparameter for pseudo-labeling
-    pseudo_idx = np.where(uncertainty < hp.get('uncertainty_threshold'))[0]
+    pseudo_idx = ascending_uncertainty_idx[:int(hp.Float("pseudo %", min_value=0., max_value=0.5, step=0.05) * len(x))]
+    hp.Fixed('uncertainty_threshold', uncertainty[pseudo_idx[-1]])
 
 
     return (
@@ -293,11 +294,11 @@ def fine_tune_mc_dropout(hyper_model, x_source, y_source, model_path, next_hyper
     """
     np.random.seed(kwargs['kseed'])
 
-    _, tuner = fine_tune(x_source, y_source, project_dir=model_path, project_name="mc_dropout_fine_tune_thr",
+    _, tuner = fine_tune(x_source, y_source, project_dir=model_path, project_name="mc_dropout_fine_tune",
                          hyper_model=hyper_model, restore_best_weights=False, return_model_and_tuner=True,
                          kseed=kwargs['kseed'])
 
     def select_fn(model, x, y, hp, **kwargs):
         return MonteCarloSelection(model, x, y, hp, **get_best_trial(tuner).hyperparameters.values, **kwargs)
 
-    return next_hyper_model(hyper_model.model_fn, select_fn, get_best_trial(tuner).hyperparameters.values['uncertainty_threshold'])
+    return next_hyper_model(hyper_model.model_fn, select_fn)
