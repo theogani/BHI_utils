@@ -85,12 +85,12 @@ class ActiveLearningHyperModel(kt.HyperModel):
     def __init__(self, model_fn, select_fn, uncertainty_threshold=None, **kwargs):
         self.model_fn = model_fn
         self.select = select_fn
-        # self.uncertainty_threshold = uncertainty_threshold
+        self.uncertainty_threshold = uncertainty_threshold
         super().__init__(**kwargs)
 
     def build(self, hp):
-        # if self.uncertainty_threshold:
-        #     hp.Fixed('uncertainty_threshold', self.uncertainty_threshold)
+        if self.uncertainty_threshold:
+            hp.Fixed('uncertainty_threshold', self.uncertainty_threshold)
         tf.keras.backend.clear_session()
         model = self.model_fn()
         # loss = hp.Choice('loss', ['binary_crossentropy', 'binary_focal_crossentropy'])
