@@ -274,7 +274,7 @@ def MonteCarloSelection(model, x, y, hp, num_samples, uncertainty_metric, **kwar
 
     # Use hyperparameter for pseudo-labeling
     pseudo_idx = ascending_uncertainty_idx[:int(hp.Float("pseudo %", min_value=0., max_value=0.5, step=0.05) * len(x))]
-    hp.Fixed('uncertainty_threshold', uncertainty[pseudo_idx[-1]])
+    hp.Fixed('uncertainty_threshold', float(uncertainty[pseudo_idx[-1]]))
 
 
     return (
