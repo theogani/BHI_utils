@@ -1,7 +1,7 @@
 from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, LambdaCallback
 import keras_tuner as kt
 import tensorflow as tf
-from sklearn.metrics import roc_auc_score, precision_score, recall_score, f1_score, accuracy_score, confusion_matrix
+from sklearn.metrics import roc_auc_score, precision_score, recall_score, f1_score, accuracy_score, confusion_matrix, roc_curve
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -273,7 +273,16 @@ def MonteCarloSelection(model, x, y, hp, num_samples, uncertainty_metric, **kwar
     uncertain_idx = ascending_uncertainty_idx[-int(0.1 * len(x)):]
 
     # Use hyperparameter for pseudo-labeling
-    pseudo_idx = np.where(uncertainty < hp.get('uncertainty_threshold'))[0]
+    thrs_source = hp.Choice('threshold_source', ['source', 'validation'])
+    if thrs_source=='source':
+        pseudo_idx = np.where(uncertainty < hp.get('uncertainty_threshold'))[0]
+    elif thrs_source=='validation':
+        mc_preds = monte_carlo_dropout_predictions(model, x_val, num_samples=num_samples)
+        incorrect = ((mc_preds.mean(axis=0) > 0.5).astype(int) != y_val).astype(int)
+
+        thrs = find_best_threshold(incorrect, calculate_uncertainty(mc_preds, uncertainty_metric))
+        pseudo_idx = np.where(uncertainty < thrs)[0]
+        hp.Fixed('uncertainty_threshold', thrs)
 
 
     return (
@@ -301,3 +310,8 @@ def fine_tune_mc_dropout(hyper_model, x_source, y_source, model_path, next_hyper
         return MonteCarloSelection(model, x, y, hp, **get_best_trial(tuner).hyperparameters.values, **kwargs)
 
     return next_hyper_model(hyper_model.model_fn, select_fn, uncertainty_threshold=get_best_trial(tuner).hyperparameters.values['uncertainty_threshold'])
+
+def find_best_threshold(incorrect, uncertainty):
+    fpr, tpr, thresholds = roc_curve(incorrect, uncertainty)
+    youden_index = tpr - fpr
+    return float(thresholds[np.argmax(youden_index)])

@@ -4,8 +4,8 @@ from tensorflow.keras.layers import Dense, Dropout, Input, BatchNormalization
 import tensorflow as tf
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import roc_auc_score, roc_curve
-from BHI_utils.utils import monte_carlo_dropout_predictions, calculate_uncertainty
+from sklearn.metrics import roc_auc_score
+from BHI_utils.utils import monte_carlo_dropout_predictions, calculate_uncertainty, find_best_threshold
 from sklearn.utils.class_weight import compute_class_weight
 
 
@@ -112,7 +112,7 @@ class ActiveLearningHyperModel(kt.HyperModel):
         x_train = np.concatenate([x_selected_train, x_pseudo_train])
         if ('pseudo_weights' in kwargs) and (kwargs['pseudo_weights']):
             kwargs['sample_weight'] = np.concatenate([np.full(len(x_selected_train), 1),
-                                                      np.full(len(x_pseudo_train), hp.Float("pseudo_weight", min_value=0.1, max_value=0.9, step=0.2))])
+                                                      np.full(len(x_pseudo_train), hp.Float("pseudo_weight", min_value=0.3, max_value=0.9, step=0.3))])
             del kwargs['pseudo_weights']
         y_train = np.concatenate([y_selected_train, y_pseudo_train])
 
@@ -161,9 +161,7 @@ class MCDropoutUncertaintyHyperModel(kt.HyperModel):
         incorrect = (y_pred != args[1].flatten()).astype(int) # 1 for incorrect, 0 for correct
         auc = roc_auc_score(incorrect, uncertainty)
 
-        fpr, tpr, thresholds = roc_curve(incorrect, uncertainty)
-        youden_index = tpr - fpr
-        hp.Fixed('uncertainty_threshold', float(thresholds[np.argmax(youden_index)]))
+        hp.Fixed('uncertainty_threshold', find_best_threshold(incorrect, uncertainty))
 
         # Set the trial score
         model.history = type('', (), {})()  # Dummy history
