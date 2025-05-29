@@ -131,11 +131,11 @@ class ActiveLearningHyperModel(kt.HyperModel):
 
         class_weight_dict = dict(zip(classes, class_weights))
 
-        # if 'sample_weight' in kwargs:
-        #     class_weights = np.array([class_weight_dict[y] for y in y_train])
-        #     kwargs['sample_weight'] = kwargs['sample_weight'] + class_weights
-        # else:
-        kwargs['class_weight'] = class_weight_dict
+        if 'sample_weight' in kwargs:
+            class_weights = np.array([class_weight_dict[y] for y in y_train])
+            kwargs['sample_weight'] = kwargs['sample_weight'] + class_weights
+        else:
+            kwargs['class_weight'] = class_weight_dict
 
         # Remove used kwargs
         del kwargs['kseed'], kwargs['source_study']
