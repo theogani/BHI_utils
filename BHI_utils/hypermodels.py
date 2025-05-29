@@ -114,7 +114,7 @@ class ActiveLearningHyperModel(kt.HyperModel):
 
         if ('pseudo_weights' in kwargs) and (kwargs['pseudo_weights']):
             kwargs['sample_weight'] = np.concatenate([np.full(len(x_selected_train), 1),
-                                                      np.full(len(x_pseudo_train), hp.Float("pseudo_weight", min_value=0.3, max_value=0.9, step=0.3))])
+                                                      np.full(len(x_pseudo_train), hp.Float("pseudo_weight", min_value=0.1, max_value=0.9, step=0.2))])
             del kwargs['pseudo_weights']
 
         x_val = np.concatenate([x_selected_val, x_pseudo_val])
