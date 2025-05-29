@@ -177,9 +177,9 @@ class MCDropoutUncertaintyHyperModel(kt.HyperModel):
         incorrect = (y_pred != args[1].flatten()).astype(int) # 1 for incorrect, 0 for correct
         auc = roc_auc_score(incorrect, uncertainty)
 
-        fpr, tpr, thresholds = roc_curve(incorrect, uncertainty)
-        youden_index = tpr - fpr
-        hp.Fixed('uncertainty_threshold', float(thresholds[np.argmax(youden_index)]))
+        # fpr, tpr, thresholds = roc_curve(incorrect, uncertainty)
+        # youden_index = tpr - fpr
+        # hp.Fixed('uncertainty_threshold', float(thresholds[np.argmax(youden_index)]))
 
         # Set the trial score
         model.history = type('', (), {})()  # Dummy history
