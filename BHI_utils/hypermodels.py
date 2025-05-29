@@ -93,7 +93,7 @@ class ActiveLearningHyperModel(kt.HyperModel):
             hp.Fixed('uncertainty_threshold', self.uncertainty_threshold)
         tf.keras.backend.clear_session()
         model = self.model_fn()
-        loss = hp.Choice('uncertainty_metric', ['binary_crossentropy', 'binary_focal_crossentropy'])
+        loss = hp.Choice('loss', ['binary_crossentropy', 'binary_focal_crossentropy'])
 
         if loss == 'binary_focal_crossentropy':
             current_optimizer = model.optimizer
