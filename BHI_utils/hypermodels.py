@@ -37,7 +37,7 @@ class InitialModel(kt.HyperModel):
         # Compile the model
         model.compile(optimizer=tf.keras.optimizers.Adam(
                           learning_rate=hp.Float("learning_rate", min_value=1e-4, max_value=1e-2, sampling="log")),
-                      loss='binary_crossentropy',
+                      loss=hp.Choice('loss', ['binary_crossentropy', 'binary_focal_crossentropy']),
                       metrics=['accuracy',
                                tf.keras.metrics.Precision(name='precision'),
                                tf.keras.metrics.Recall(name='recall'),
@@ -93,20 +93,6 @@ class ActiveLearningHyperModel(kt.HyperModel):
             hp.Fixed('uncertainty_threshold', self.uncertainty_threshold)
         tf.keras.backend.clear_session()
         model = self.model_fn()
-        # loss = hp.Choice('loss', ['binary_crossentropy', 'binary_focal_crossentropy'])
-        #
-        # if loss == 'binary_focal_crossentropy':
-        #     current_optimizer = model.optimizer
-        #     # Recompile with a new loss function
-        #     model.compile(
-        #         optimizer=current_optimizer,
-        #         loss=loss,
-        #         metrics=['accuracy',
-        #                  tf.keras.metrics.Precision(name='precision'),
-        #                  tf.keras.metrics.Recall(name='recall'),
-        #                  tf.keras.metrics.AUC(name='auc'),
-        #                  tf.keras.metrics.AUC(curve='PR', name='auprc')]
-        #     )
         return model
 
     def fit(self, hp, mdl, *args, **kwargs):
