@@ -244,7 +244,6 @@ def adapt_to_target(hyper_model, x_trn, y_trn, target_study, model_path, suffix=
         x_source, y_source = x_trn[source_ids], y_trn[source_ids]
 
         hyper_model = fine_tune_on_source(hyper_model, x_source, y_source, model_path, **kwargs)
-        del kwargs['next_hyper_model']
 
 
     return fine_tune(x_trn, y_trn, hyper_model=hyper_model, project_dir=model_path,
