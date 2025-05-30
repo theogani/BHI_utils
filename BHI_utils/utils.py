@@ -6,6 +6,8 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
+from sklearn.cluster import KMeans
+from scipy.spatial.distance import cdist
 
 
 def get_best_trial(tuner):
@@ -295,23 +297,92 @@ def MonteCarloSelection(model, x, y, hp, num_samples, uncertainty_metric, **kwar
         (mean_predictions[pseudo_idx] > 0.5).astype(int),
         np.empty((0, *y.shape[1:]), dtype=y.dtype)
     )
+def fine_tune_mc_dropout(next_hyper_model, sel):
+    def fun(hyper_model, x_source, y_source, model_path, **kwargs):
+        """
+        Fine-tune the model using Monte Carlo Dropout.
+        """
+        np.random.seed(kwargs['kseed'])
 
-def fine_tune_mc_dropout(hyper_model, x_source, y_source, model_path, next_hyper_model, **kwargs):
-    """
-    Fine-tune the model using Monte Carlo Dropout.
-    """
-    np.random.seed(kwargs['kseed'])
+        _, tuner = fine_tune(x_source, y_source, project_dir=model_path, project_name="mc_dropout_fine_tune",
+                             hyper_model=hyper_model, restore_best_weights=False, return_model_and_tuner=True,
+                             kseed=kwargs['kseed'])
 
-    _, tuner = fine_tune(x_source, y_source, project_dir=model_path, project_name="mc_dropout_fine_tune",
-                         hyper_model=hyper_model, restore_best_weights=False, return_model_and_tuner=True,
-                         kseed=kwargs['kseed'])
+        def select_fn(model, x, y, hp, **kwargs):
+            return sel(model, x, y, hp, **get_best_trial(tuner).hyperparameters.values, **kwargs)
 
-    def select_fn(model, x, y, hp, **kwargs):
-        return MonteCarloSelection(model, x, y, hp, **get_best_trial(tuner).hyperparameters.values, **kwargs)
-
-    return next_hyper_model(hyper_model.model_fn, select_fn, uncertainty_threshold=get_best_trial(tuner).hyperparameters.values['uncertainty_threshold'])
+        return next_hyper_model(hyper_model.model_fn, select_fn, uncertainty_threshold=get_best_trial(tuner).hyperparameters.values['uncertainty_threshold'])
+    return fun
 
 def find_best_threshold(incorrect, uncertainty):
     fpr, tpr, thresholds = roc_curve(incorrect, uncertainty)
     youden_index = tpr - fpr
     return float(thresholds[np.argmax(youden_index)])
+
+def MonteCarlo_Representation_Selection(model, x, y, hp, num_samples, uncertainty_metric, **kwargs):
+    """
+    Perform Monte Carlo Dropout predictions and select samples based on uncertainty and representation.
+    """
+    np.random.seed(kwargs['kseed'])
+
+    # Split uncertain samples for training and validation
+    x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=int(0.1 * len(x)), random_state=kwargs['kseed'])
+
+    # Get MC Dropout predictions and calculate uncertainty
+    mc_predictions = monte_carlo_dropout_predictions(model, x_train, num_samples)
+    mean_predictions, uncertainty = mc_predictions.mean(axis=0), calculate_uncertainty(mc_predictions, uncertainty_metric)
+
+    # Use hyperparameter for pseudo-labeling
+    thrs_source = hp.Choice('threshold_source', ['source', 'validation'])
+    if thrs_source=='source':
+        pseudo_idx = np.where(uncertainty < hp.get('uncertainty_threshold'))[0]
+    elif thrs_source=='validation':
+        mc_preds = monte_carlo_dropout_predictions(model, x_val, num_samples=num_samples)
+        incorrect = ((mc_preds.mean(axis=0) > 0.5).astype(int) != y_val).astype(int)
+
+        thrs = find_best_threshold(incorrect, calculate_uncertainty(mc_preds, uncertainty_metric))
+        pseudo_idx = np.where(uncertainty < thrs)[0]
+        hp.Fixed('uncertainty_threshold', thrs)
+
+    classes = np.array([0, 1])
+    if np.all(np.isin(classes, np.unique((mean_predictions[pseudo_idx] > 0.5).astype(int)))):
+        x_cluster, y_cluster = x_train[pseudo_idx], (mean_predictions[pseudo_idx] > 0.5).astype(int)
+    elif np.all(np.isin(classes, np.unique((mean_predictions > 0.5).astype(int)))):
+        x_cluster, y_cluster = x_train, (mean_predictions > 0.5).astype(int)
+
+    # Per-class clustering
+    cluster_centers = []
+    n_clusters = hp.Int('num_representatives_per_class', min_value=1, max_value=3, step=1)
+    for cls in classes:
+        cls_idx = np.where(y_cluster == cls)[0]
+        kmeans = KMeans(n_clusters=min(n_clusters, len(cls_idx)), random_state=kwargs['kseed'])
+        kmeans.fit(x_cluster[cls_idx])
+        cluster_centers.extend(kmeans.cluster_centers_)
+    cluster_centers = np.array(cluster_centers)
+
+    # Score representativeness: for each x_train, compute min distance to its predicted class cluster centers
+    representativeness = np.zeros(len(x_train))
+    for i, sample in enumerate(x_train):
+        dists = cdist([sample], cluster_centers)
+        representativeness[i] = np.min(dists)
+
+    # Normalize scores to [0, 1]
+    uncertainty_norm = (uncertainty - np.min(uncertainty)) / (np.max(uncertainty) - np.min(uncertainty) + 1e-8)
+    representativeness_norm = (representativeness - np.min(representativeness)) / (np.max(representativeness) - np.min(representativeness) + 1e-8)
+
+    # Combine with a weight alpha
+    alpha = hp.Float('alpha', min_value=0.4, max_value=0.6, step=0.1, default=0.5)
+    score = alpha * uncertainty_norm + (1 - alpha) * (1 - representativeness_norm)  # (1 - rep) if lower is better
+
+    # Select top 10% most uncertain for annotation (as before)
+    ascending_score_idx = np.argsort(score)
+    uncertain_idx = ascending_score_idx[:int(0.1 * len(x))]
+
+    return (x_train[uncertain_idx],
+            x_val,
+            x_train[pseudo_idx],
+            np.empty((0, *x.shape[1:]), dtype=x.dtype),
+            y_train[uncertain_idx],
+            y_val,
+            (mean_predictions[pseudo_idx] > 0.5).astype(int),
+            np.empty((0, *y.shape[1:]), dtype=y.dtype))
