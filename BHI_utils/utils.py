@@ -370,7 +370,7 @@ def MonteCarlo_Representation_Selection(model, x, y, hp, num_samples, uncertaint
     representativeness_norm = (representativeness - np.min(representativeness)) / (np.max(representativeness) - np.min(representativeness) + 1e-8)
 
     # Combine with a weight alpha
-    alpha = hp.Float('alpha', min_value=0.4, max_value=0.6, step=0.1, default=0.5)
+    alpha = hp.Float('uncertainty_weight', min_value=0.4, max_value=0.6, step=0.1, default=0.5)
     score = alpha * uncertainty_norm + (1 - alpha) * (1 - representativeness_norm)  # (1 - rep) if lower is better
 
     # Select top 10% most uncertain for annotation (as before)
