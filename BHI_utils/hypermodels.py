@@ -121,6 +121,8 @@ class ActiveLearningHyperModel(kt.HyperModel):
         y_val = np.concatenate([y_selected_val, y_pseudo_val])
 
         classes = np.array([0, 1])
+        print(np.isin(classes, np.unique(y_selected_train)))
+        print(np.isin(classes, np.unique(y_train)))
         class_weights = compute_class_weight(class_weight='balanced', classes=classes, y=y_selected_train)
         # if np.all(np.isin(classes, np.unique(y_selected_train))):
         #     class_weights = compute_class_weight(class_weight='balanced', classes=classes, y=y_selected_train)
