@@ -40,14 +40,14 @@ def load_best_model(tuner, model_path=None):
 
 
 def fine_tune(X_trn, y_trn, return_model_and_tuner=False, scaler=None, hyper_model=None, project_dir=None,
-              project_name=None, restore_best_weights=True, **kwargs):
+              project_name=None, restore_best_weights=True, objective="val_auc", **kwargs):
     if scaler:
         X_trn = scaler.fit_transform(X_trn)
 
     tuner = kt.RandomSearch(
         hyper_model,
         max_trials=100,
-        objective=kt.Objective("val_auc", direction="max"),
+        objective=kt.Objective(objective, direction="max"),
         executions_per_trial=1,
         directory=project_dir,
         project_name=project_name,
