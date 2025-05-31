@@ -173,7 +173,8 @@ class ActiveLearningSourceAwareHyperModel(ActiveLearningHyperModel):
 
         if ('pseudo_weights' in kwargs) and (kwargs['pseudo_weights']):
             alpha = hp.Float("pseudo_weight", min_value=0.1, max_value=0.5, step=0.2)
-            kwargs['sample_weight'] = np.concatenate([np.full(len(x_selected_train), 1 - alpha),
+            kwargs['sample_weight'] = np.concatenate([np.full(len(x_source), 1 - alpha),
+                                                      np.full(len(x_selected_train), 1),
                                                       np.full(len(x_pseudo_train), alpha)])
             del kwargs['pseudo_weights']
 
