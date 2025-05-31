@@ -10,8 +10,9 @@ from sklearn.utils.class_weight import compute_class_weight
 
 
 class InitialModel(kt.HyperModel):
-    def __init__(self, input_dim, **kwargs):
+    def __init__(self, input_dim, output_dim=1, **kwargs):
         self.input_dim = input_dim
+        self.output_dim = output_dim
         super().__init__(**kwargs)
 
     def build(self, hp):
@@ -31,7 +32,7 @@ class InitialModel(kt.HyperModel):
             model.add(Dropout(rate=dropout_rate))
 
         # Output layer
-        model.add(Dense(1, activation='sigmoid'))
+        model.add(Dense(self.output_dim, activation='sigmoid' if self.output_dim == 1 else 'softmax'))
         model.summary()
 
         # Compile the model
