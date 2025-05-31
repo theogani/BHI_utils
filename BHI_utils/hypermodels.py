@@ -35,12 +35,10 @@ class InitialModel(kt.HyperModel):
         model.add(Dense(self.output_dim, activation='sigmoid' if self.output_dim == 1 else 'softmax'))
         model.summary()
 
-        loss = hp.Choice('loss', ['crossentropy', 'focal_crossentropy'])
-
         # Compile the model
         model.compile(optimizer=tf.keras.optimizers.Adam(
                           learning_rate=hp.Float("learning_rate", min_value=1e-4, max_value=1e-2, sampling="log")),
-                      loss=('binary_' if self.output_dim == 1 else 'categorical_') + loss,
+                      loss=('binary_' if self.output_dim == 1 else 'categorical_') + hp.Choice('loss', ['crossentropy', 'focal_crossentropy']),
                       metrics=['accuracy',
                                tf.keras.metrics.Precision(name='precision'),
                                tf.keras.metrics.Recall(name='recall'),
