@@ -150,6 +150,71 @@ class ActiveLearningHyperModel(kt.HyperModel):
 
         return mdl.fit(x_train, y_train, validation_data=(x_val, y_val), **kwargs)
 
+class ActiveLearningSourceAwareHyperModel(ActiveLearningHyperModel):
+    def fit(self, hp, mdl, X, y, studies, target_study, source_study, **kwargs):
+        # Rank the informativeness of samples in the target study based on Monte Carlo Dropout.
+        # Select the 20% most uncertain samples to annotate.
+        # Use a hyperparameter threshold to distinguish certain and uncertain samples.
+        # Use certain samples with pseudo-labels for training.
+
+        np.random.seed(kwargs['kseed'])
+
+        # Split target study data
+        x_target, y_target = X[studies == target_study], y[studies == target_study]
+        # Split source study data
+        x_source, y_source = X[studies == source_study], y[studies == source_study]
+
+        x_selected_train, x_selected_val, x_pseudo_train, x_pseudo_val, y_selected_train, y_selected_val, y_pseudo_train, y_pseudo_val = self.select(
+            model=mdl, x=x_target, y=y_target, hp=hp, **kwargs)
+
+        # Prepare training data
+        x_train = np.concatenate([x_source, x_selected_train, x_pseudo_train])
+        y_train = np.concatenate([y_source, y_selected_train, y_pseudo_train])
+
+        if ('pseudo_weights' in kwargs) and (kwargs['pseudo_weights']):
+            alpha = hp.Float("pseudo_weight", min_value=0.1, max_value=0.5, step=0.2)
+            kwargs['sample_weight'] = np.concatenate([np.full(len(x_selected_train), 1 - alpha),
+                                                      np.full(len(x_pseudo_train), alpha)])
+            del kwargs['pseudo_weights']
+
+        x_val = np.concatenate([x_selected_val, x_pseudo_val])
+        y_val = np.concatenate([y_selected_val, y_pseudo_val])
+
+        classes = np.array([0, 1])
+        print(np.isin(classes, np.unique(y_selected_train)))
+        print(np.isin(classes, np.unique(y_train)))
+        class_weights = compute_class_weight(class_weight='balanced', classes=classes, y=y_selected_train)
+        # if np.all(np.isin(classes, np.unique(y_selected_train))):
+        #     class_weights = compute_class_weight(class_weight='balanced', classes=classes, y=y_selected_train)
+        # elif np.all(np.isin(classes, np.unique(y_train))):
+        #     print(30*'Only one class in selected, two in pseudo.\n')
+        #     class_weights = compute_class_weight(class_weight='balanced', classes=classes, y=y_train)
+        # else:
+        #     print(30*'Only one class.\n')
+        #     class_weights = np.array([0.2 if np.isin(i, np.unique(y_selected_train)) else 0.8 for i in classes])
+
+        class_weight_dict = dict(zip(classes, class_weights))
+
+        if 'sample_weight' in kwargs:
+            class_weights = np.array([class_weight_dict[y] for y in y_train])
+            kwargs['sample_weight'] = kwargs['sample_weight'] + class_weights
+        else:
+            kwargs['class_weight'] = class_weight_dict
+
+        # Remove used kwargs
+        del kwargs['kseed'], kwargs['source_study']
+        for layer in mdl.layers:
+            if hasattr(layer, 'kernel_initializer') and hasattr(layer, 'kernel'):
+                layer.kernel.assign(layer.kernel_initializer(tf.shape(layer.kernel)))
+            if hasattr(layer, 'bias_initializer') and hasattr(layer, 'bias'):
+                layer.bias.assign(layer.bias_initializer(tf.shape(layer.bias)))
+            # For layers like BatchNormalization
+            if hasattr(layer, 'moving_mean') and hasattr(layer, 'moving_variance'):
+                layer.moving_mean.assign(tf.zeros_like(layer.moving_mean))
+                layer.moving_variance.assign(tf.ones_like(layer.moving_variance))
+
+        return mdl.fit(x_train, y_train, validation_data=(x_val, y_val), **kwargs)
+
 class MCDropoutUncertaintyHyperModel(kt.HyperModel):
     def __init__(self, model_fn, **kwargs):
         self.model_fn = model_fn
