@@ -387,7 +387,7 @@ def MonteCarlo_Representation_Selection(model, x, y, hp, num_samples, uncertaint
             (mean_predictions[pseudo_idx] > 0.5).astype(int),
             np.empty((0, *y.shape[1:]), dtype=y.dtype))
 
-def Representation_Selection(model, x, y, hp, num_samples, uncertainty_metric, **kwargs):
+def Representation_Selection(model, x, y, hp, **kwargs):
     """
     Perform representation selection based on uncertainty and clustering.
     """
