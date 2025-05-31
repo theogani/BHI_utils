@@ -432,7 +432,7 @@ def Representation_Selection(model, x, y, hp, **kwargs):
             np.empty((0, *x.shape[1:]), dtype=x.dtype),
             y_train[select_idx],
             y_val,
-            np.empty((0, *x.shape[1:]), dtype=x.dtype),
+            np.empty((0, *y.shape[1:]), dtype=x.dtype),
             np.empty((0, *y.shape[1:]), dtype=y.dtype))
 
 def mmd(X, Y, kernel='rbf', gamma=None):
