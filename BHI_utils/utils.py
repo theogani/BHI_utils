@@ -2,6 +2,7 @@ from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, LambdaCallbac
 import keras_tuner as kt
 import tensorflow as tf
 from sklearn.metrics import roc_auc_score, precision_score, recall_score, f1_score, accuracy_score, confusion_matrix, roc_curve
+from sklearn.metrics.pairwise import pairwise_kernels
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -385,3 +386,23 @@ def MonteCarlo_Representation_Selection(model, x, y, hp, num_samples, uncertaint
             y_val,
             (mean_predictions[pseudo_idx] > 0.5).astype(int),
             np.empty((0, *y.shape[1:]), dtype=y.dtype))
+
+def mmd(X, Y, kernel='rbf', gamma=None):
+    """
+    Compute the Maximum Mean Discrepancy (MMD) between two samples: X and Y.
+
+    Args:
+        X (np.ndarray): Samples from distribution P, shape (n_samples_X, n_features)
+        Y (np.ndarray): Samples from distribution Q, shape (n_samples_Y, n_features)
+        kernel (str): Kernel type for pairwise_kernels (default: 'rbf')
+        gamma (float): Kernel coefficient for 'rbf', 'poly', and 'sigmoid'
+
+    Returns:
+        float: MMD statistic
+    """
+    XX = pairwise_kernels(X, X, metric=kernel, gamma=gamma)
+    YY = pairwise_kernels(Y, Y, metric=kernel, gamma=gamma)
+    XY = pairwise_kernels(X, Y, metric=kernel, gamma=gamma)
+
+    mmd_stat = XX.mean() + YY.mean() - 2 * XY.mean()
+    return mmd_stat
