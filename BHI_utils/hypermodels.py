@@ -182,17 +182,17 @@ class ActiveLearningSourceAwareHyperModel(ActiveLearningHyperModel):
         y_val = np.concatenate([y_selected_val, y_pseudo_val])
 
         classes = np.array([0, 1])
-        print(np.isin(classes, np.unique(y_selected_train)))
-        print(np.isin(classes, np.unique(y_train)))
-        class_weights = compute_class_weight(class_weight='balanced', classes=classes, y=y_selected_train)
-        # if np.all(np.isin(classes, np.unique(y_selected_train))):
-        #     class_weights = compute_class_weight(class_weight='balanced', classes=classes, y=y_selected_train)
-        # elif np.all(np.isin(classes, np.unique(y_train))):
-        #     print(30*'Only one class in selected, two in pseudo.\n')
-        #     class_weights = compute_class_weight(class_weight='balanced', classes=classes, y=y_train)
-        # else:
-        #     print(30*'Only one class.\n')
-        #     class_weights = np.array([0.2 if np.isin(i, np.unique(y_selected_train)) else 0.8 for i in classes])
+        # print(np.isin(classes, np.unique(y_selected_train)))
+        # print(np.isin(classes, np.unique(y_train)))
+        # class_weights = compute_class_weight(class_weight='balanced', classes=classes, y=y_selected_train)
+        if np.all(np.isin(classes, np.unique(y_selected_train))):
+            class_weights = compute_class_weight(class_weight='balanced', classes=classes, y=y_selected_train)
+        elif np.all(np.isin(classes, np.unique(y_train))):
+            print(30*'Only one class in selected, two in pseudo.\n')
+            class_weights = compute_class_weight(class_weight='balanced', classes=classes, y=y_train)
+        else:
+            print(30*'Only one class.\n')
+            class_weights = np.array([0.2 if np.isin(i, np.unique(y_selected_train)) else 0.8 for i in classes])
 
         class_weight_dict = dict(zip(classes, class_weights))
 
