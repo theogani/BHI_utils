@@ -286,7 +286,7 @@ def MonteCarloSelection(model, x, y, hp, num_samples, uncertainty_metric, **kwar
         pseudo_idx = np.where(uncertainty < thrs)[0]
         hp.Fixed('uncertainty_threshold', thrs)
     uncertain_idx = np.where(uncertainty < hp.get('uncertainty_threshold'))[0]
-    hp.Fixed('number_of_selected', len(uncertain_idx))
+    hp.Fixed('number_of_selected', len(uncertain_idx)/ len(x))
 
     return (
         x_train[uncertain_idx],
