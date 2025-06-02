@@ -270,9 +270,9 @@ def MonteCarloSelection(model, x, y, hp, num_samples, uncertainty_metric, **kwar
     mean_predictions, uncertainty = mc_predictions.mean(axis=0), calculate_uncertainty(mc_predictions, uncertainty_metric)
 
     # Select top 20% most uncertain for annotation
-    ascending_uncertainty_idx = np.argsort(uncertainty)
+    # ascending_uncertainty_idx = np.argsort(uncertainty)
 
-    uncertain_idx = ascending_uncertainty_idx[-int(0.1 * len(x)):]
+    # uncertain_idx = ascending_uncertainty_idx[-int(0.1 * len(x)):]
 
     # Use hyperparameter for pseudo-labeling
     thrs_source = hp.Choice('threshold_source', ['source', 'validation'])
@@ -285,7 +285,8 @@ def MonteCarloSelection(model, x, y, hp, num_samples, uncertainty_metric, **kwar
         thrs = find_best_threshold(incorrect, calculate_uncertainty(mc_preds, uncertainty_metric))
         pseudo_idx = np.where(uncertainty < thrs)[0]
         hp.Fixed('uncertainty_threshold', thrs)
-
+    uncertain_idx = np.where(uncertainty < hp.get('uncertainty_threshold'))[0]
+    hp.Fixed('number_of_selected', len(uncertain_idx))
 
     return (
         x_train[uncertain_idx],
@@ -297,6 +298,7 @@ def MonteCarloSelection(model, x, y, hp, num_samples, uncertainty_metric, **kwar
         (mean_predictions[pseudo_idx] > 0.5).astype(int),
         np.empty((0, *y.shape[1:]), dtype=y.dtype)
     )
+
 def fine_tune_mc_dropout(next_hyper_model, sel):
     def fun(hyper_model, x_source, y_source, model_path, **kwargs):
         """
