@@ -21,13 +21,14 @@ class InitialModel(kt.HyperModel):
         model.add(Input(shape=(self.input_dim,)))
 
         # Define dropout rate and number of layers
-        dropout_rate = hp.Float('dropout', min_value=0.0, max_value=0.5, step=0.1)
+        dropout_rate = hp.Float('dropout', min_value=0.1, max_value=0.5, step=0.1)
+        l2_reg = hp.Float('weight_decay', min_value=1e-6, max_value=1e-2, sampling='log')
         num_layers = hp.Int('num_layers', min_value=1, max_value=5, step=1)
 
         # Add layers with dynamically chosen units
         for i in range(num_layers):
             units = hp.Choice(f'units_{i}', values=[32 * (2 ** j) for j in range(int(np.log2(self.input_dim // 32)) + 1)])
-            model.add(Dense(units=units, activation='relu'))
+            model.add(Dense(units=units, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg)))
             model.add(BatchNormalization())
             model.add(Dropout(rate=dropout_rate))
 
@@ -35,7 +36,8 @@ class InitialModel(kt.HyperModel):
         model.add(Dense(self.output_dim, activation='sigmoid' if self.output_dim == 1 else 'softmax'))
         model.summary()
 
-        loss = hp.Choice('loss', ['crossentropy', 'focal_crossentropy'])
+        loss = hp.Choice('loss', [('binary_' if self.output_dim == 1 else 'categorical_') + 'crossentropy',
+                                  ('binary_' if self.output_dim == 1 else 'categorical_') + 'focal_crossentropy'])
 
         # Compile the model
         model.compile(optimizer=tf.keras.optimizers.Adam(
