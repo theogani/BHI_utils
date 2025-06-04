@@ -22,7 +22,7 @@ class InitialModel(kt.HyperModel):
 
         # Define dropout rate and number of layers
         dropout_rate = hp.Float('dropout', min_value=0.1, max_value=0.5, step=0.1)
-        l2_reg = hp.Float('weight_decay', min_value=1e-6, max_value=1e-2, sampling='log')
+        l2_reg = hp.Float('weight_decay', min_value=1e-3, max_value=1e-1, sampling='log')
         num_layers = hp.Int('num_layers', min_value=1, max_value=5, step=1)
 
         # Add layers with dynamically chosen units
