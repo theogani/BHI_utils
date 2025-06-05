@@ -4,7 +4,7 @@ from tensorflow.keras.layers import Dense, Dropout, Input, BatchNormalization
 import tensorflow as tf
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, accuracy_score
 from BHI_utils.utils import monte_carlo_dropout_predictions, calculate_uncertainty, find_best_threshold
 from sklearn.utils.class_weight import compute_class_weight
 
@@ -237,7 +237,7 @@ class MCDropoutUncertaintyHyperModel(kt.HyperModel):
 
         y_pred = (mc_preds.mean(axis=0) > 0.5).astype(int)
         incorrect = (y_pred != args[1].flatten()).astype(int) # 1 for incorrect, 0 for correct
-        auc = roc_auc_score(incorrect, uncertainty)
+        auc = roc_auc_score(incorrect, uncertainty) if len(np.unique(incorrect))==2 else accuracy_score(incorrect, (uncertainty>find_best_threshold(incorrect, uncertainty))*1)
 
         hp.Fixed('uncertainty_threshold', find_best_threshold(incorrect, uncertainty))
 
