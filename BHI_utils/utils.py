@@ -380,6 +380,7 @@ def MonteCarlo_Representation_Selection(model, x, y, hp, num_samples, uncertaint
     # Select top 10% most uncertain for annotation (as before)
     ascending_score_idx = np.argsort(score)
     uncertain_idx = ascending_score_idx[:int(0.1 * len(x))]
+    pseudo_idx = np.setdiff1d(pseudo_idx, uncertain_idx)
 
     return (x_train[uncertain_idx],
             x_val,
