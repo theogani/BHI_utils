@@ -153,13 +153,15 @@ class ActiveLearningHyperModel(kt.HyperModel):
         return mdl.fit(x_train, y_train, validation_data=(x_val, y_val), **kwargs)
 
 class ActiveLearningSourceAwareHyperModel(ActiveLearningHyperModel):
-    def fit(self, hp, mdl, X, y, studies, target_study, source_study, **kwargs):
+    def fit(self, hp, mdl, X, y, source_study, **kwargs):
         # Rank the informativeness of samples in the target study based on Monte Carlo Dropout.
         # Select the 20% most uncertain samples to annotate.
         # Use a hyperparameter threshold to distinguish certain and uncertain samples.
         # Use certain samples with pseudo-labels for training.
 
         np.random.seed(kwargs['kseed'])
+        target_study = kwargs['target_study']
+        studies = kwargs['studies']
 
         # Split target study data
         x_target, y_target = X[studies == target_study], y[studies == target_study]

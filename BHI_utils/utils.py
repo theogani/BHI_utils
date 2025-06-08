@@ -439,6 +439,54 @@ def Representation_Selection(model, x, y, hp, **kwargs):
             np.empty((0, *y.shape[1:]), dtype=x.dtype),
             np.empty((0, *y.shape[1:]), dtype=y.dtype))
 
+def Representation_Selection_sensitive(model, x, y, hp, sens_attr, **kwargs):
+    """
+    Perform representation selection based on uncertainty and clustering.
+    """
+    np.random.seed(kwargs['kseed'])
+
+    # Split uncertain samples for training and validation
+    x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=int(0.1 * len(x)), random_state=kwargs['kseed'])
+
+    y_pred = model.predict(x_train, verbose=0)
+
+    x_cluster, y_cluster = x_train, sens_attr[kwargs['studies'] == kwargs['target_study']]
+
+    # Per-class clustering
+    cluster_centers = []
+    n_clusters = hp.Int('num_representatives_per_class', min_value=1, max_value=3, step=1)
+    classes = np.unique(sens_attr)
+    for cls in classes:
+        cls_idx = np.where(y_cluster == cls)[0]
+        kmeans = KMeans(n_clusters=min(n_clusters, len(cls_idx)), random_state=kwargs['kseed'])
+        kmeans.fit(x_cluster[cls_idx])
+        cluster_centers.extend(kmeans.cluster_centers_)
+    cluster_centers = np.array(cluster_centers)
+
+    # Score representativeness: for each x_train, compute min distance to its predicted class cluster centers
+    representativeness = np.zeros(len(x_train))
+    for i, sample in enumerate(x_train):
+        dists = cdist([sample], cluster_centers)
+        representativeness[i] = np.min(dists)
+
+    # Normalize scores to [0, 1]
+    representativeness_norm = (representativeness - np.min(representativeness)) / (np.max(representativeness) - np.min(representativeness) + 1e-8)
+
+    score = (1 - representativeness_norm)
+
+    # Select top 10% most uncertain for annotation (as before)
+    ascending_score_idx = np.argsort(score)
+    select_idx = ascending_score_idx[:int(0.1 * len(x))]
+
+    return (x_train[select_idx],
+            x_val,
+            np.empty((0, *x.shape[1:]), dtype=x.dtype),
+            np.empty((0, *x.shape[1:]), dtype=x.dtype),
+            y_train[select_idx],
+            y_val,
+            np.empty((0, *y.shape[1:]), dtype=x.dtype),
+            np.empty((0, *y.shape[1:]), dtype=y.dtype))
+
 def mmd(X, Y, kernel='rbf', gamma=None):
     """
     Compute the Maximum Mean Discrepancy (MMD) between two samples: X and Y.
