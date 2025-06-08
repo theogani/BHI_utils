@@ -208,6 +208,8 @@ class ActiveLearningSourceAwareHyperModel(ActiveLearningHyperModel):
 
         # Remove used kwargs
         del kwargs['kseed'], kwargs['target_study'], kwargs['studies']
+        if 'sens_attr' in kwargs:
+            del kwargs['sens_attr']
         for layer in mdl.layers:
             if hasattr(layer, 'kernel_initializer') and hasattr(layer, 'kernel'):
                 layer.kernel.assign(layer.kernel_initializer(tf.shape(layer.kernel)))
