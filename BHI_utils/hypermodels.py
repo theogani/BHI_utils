@@ -207,7 +207,7 @@ class ActiveLearningSourceAwareHyperModel(ActiveLearningHyperModel):
             kwargs['class_weight'] = class_weight_dict
 
         # Remove used kwargs
-        del kwargs['kseed']
+        del kwargs['kseed'], kwargs['target_study'], kwargs['studies']
         for layer in mdl.layers:
             if hasattr(layer, 'kernel_initializer') and hasattr(layer, 'kernel'):
                 layer.kernel.assign(layer.kernel_initializer(tf.shape(layer.kernel)))
