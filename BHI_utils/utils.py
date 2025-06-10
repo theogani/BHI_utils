@@ -97,6 +97,8 @@ def model_evaluation(mdl, x, y, sensitive_attributes=None):
             false_positive_rates = {}
 
             for group in sensitive_attributes[col].unique():
+                if group.lower()=='unkonwn':
+                    continue
                 group_mask = (sensitive_attributes[col] == group)
                 y_true_group = y[group_mask]
                 y_pred_group = y_pred_binary[group_mask]
@@ -447,8 +449,6 @@ def Representation_Selection_sensitive(model, x, y, hp, sens_attr, **kwargs):
 
     # Split uncertain samples for training and validation
     x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=int(0.1 * len(x)), random_state=kwargs['kseed'])
-
-    y_pred = model.predict(x_train, verbose=0)
 
     x_cluster, y_cluster = x_train, sens_attr[kwargs['studies'] == kwargs['target_study']]
 
