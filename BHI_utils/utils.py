@@ -97,7 +97,7 @@ def model_evaluation(mdl, x, y, sensitive_attributes=None):
             false_positive_rates = {}
 
             for group in sensitive_attributes[col].unique():
-                if group.lower()=='unkonwn':
+                if group.lower()=='unknown':
                     continue
                 group_mask = (sensitive_attributes[col] == group)
                 y_true_group = y[group_mask]
